@@ -6,7 +6,7 @@
  *   SMTP_PORT=587
  *   SMTP_USER=you@gmail.com
  *   SMTP_PASS=your-app-password
- *   SMTP_FROM="ibird Portal <no-reply@yourdomain.com>"
+ *   SMTP_FROM="iSmart Market <no-reply@yourdomain.com>"
  *
  * If SMTP_HOST is not set, emails are silently skipped (no crash).
  */

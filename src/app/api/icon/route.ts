@@ -4,7 +4,7 @@ import sharp from 'sharp'
 export async function GET(req: NextRequest) {
   const size = Math.min(512, Math.max(16, Number(req.nextUrl.searchParams.get('size')) || 192))
 
-  // ibird Portal icon — bold blue square with stylised "i" lettermark
+  // iSmart Market icon — bold blue square with stylised "iS" lettermark
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
     <defs>
       <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
