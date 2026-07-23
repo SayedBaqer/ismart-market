@@ -7,7 +7,7 @@
 module.exports = {
   apps: [
     {
-      name: 'ibird-portal',
+      name: 'ismart-market',
       script: 'server.js',
       cwd: __dirname,
 

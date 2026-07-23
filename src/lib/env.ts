@@ -20,7 +20,7 @@ if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
         const secret = crypto.randomBytes(32).toString('base64')
         fs.writeFileSync(envPath, `NEXTAUTH_SECRET="${secret}"\n${existing}`, 'utf-8')
         process.env.NEXTAUTH_SECRET = secret
-        console.log('[ibird] NEXTAUTH_SECRET auto-generated.')
+        console.log('[ismart] NEXTAUTH_SECRET auto-generated.')
       }
     } catch {
       // Non-fatal — can be set manually
@@ -29,7 +29,7 @@ if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
 
   // Hints only — no file writes
   if (!process.env.DATABASE_URL) {
-    console.log('[ibird] No DATABASE_URL — visit /setup to configure the database.')
+    console.log('[ismart] No DATABASE_URL — visit /setup to configure the database.')
   }
 }
 

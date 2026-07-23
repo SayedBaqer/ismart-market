@@ -58,7 +58,7 @@ export const useCartStore = create<CartState>()(
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
     }),
-    { name: 'ibird-cart' },
+    { name: 'ismart-cart' },
   ),
 )
 

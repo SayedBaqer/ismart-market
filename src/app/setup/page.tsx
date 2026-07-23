@@ -24,7 +24,7 @@ export default function SetupPage() {
   const [db, setDb] = useState({
     host: 'localhost',
     port: '3306',
-    database: 'ibird_portal',
+    database: 'ismart_market',
     username: 'root',
     password: '',
   })
@@ -327,7 +327,7 @@ export default function SetupPage() {
                 <input
                   value={db.database}
                   onChange={(e) => setDb((d) => ({ ...d, database: e.target.value }))}
-                  placeholder="ibird_portal"
+                  placeholder="ismart_market"
                   className="h-9 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-xs text-gray-400">
@@ -335,7 +335,7 @@ export default function SetupPage() {
                     ? 'Create this database in cPanel → MySQL Databases first.'
                     : 'Must already exist. Run: '}
                   {provider === 'postgresql' && (
-                    <code className="rounded bg-gray-100 px-1 font-mono">CREATE DATABASE ibird_portal;</code>
+                    <code className="rounded bg-gray-100 px-1 font-mono">CREATE DATABASE ismart_market;</code>
                   )}
                 </p>
               </div>
@@ -393,7 +393,7 @@ export default function SetupPage() {
                 required
                 value={company.name}
                 onChange={(e) => setCompany({ ...company, name: e.target.value })}
-                placeholder="e.g. iBird Electronics"
+                placeholder="e.g. iSmart Market"
               />
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">

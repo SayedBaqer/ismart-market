@@ -7,7 +7,7 @@ import { PwaRegister } from '@/components/pwa-register'
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const name = (await getSetting('company.name')) ?? 'ibird Portal'
+  const name = (await getSetting('company.name')) ?? 'iSmart Market'
   return {
     title: {
       default: name,

@@ -1,6 +1,6 @@
 {
-  "name": "ibird Portal",
-  "short_name": "Portal",
+  "name": "iSmart Market",
+  "short_name": "iSmart",
   "description": "Professional e-commerce and business management portal",
   "start_url": "/",
   "display": "standalone",

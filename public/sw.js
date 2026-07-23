@@ -1,4 +1,4 @@
-const CACHE = 'ibird-v1'
+const CACHE = 'ismart-v1'
 const STATIC = [
   '/',
   '/products',

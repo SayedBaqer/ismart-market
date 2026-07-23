@@ -10,7 +10,7 @@ export async function HeroSection() {
     prisma.product.count({ where: { isActive: true, isHidden: false } }).catch(() => 0),
   ])
 
-  const name = companyName ?? 'ibird Portal'
+  const name = companyName ?? 'iSmart Market'
   const sub = tagline ?? 'Professional equipment and accessories delivered to your door.'
 
   return (

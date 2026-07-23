@@ -6,7 +6,7 @@
 deployment:
   tasks:
     # 1. Install only production dependencies (faster, smaller)
-    - export DEPLOYPATH=/home/$USER/ibird-portal
+    - export DEPLOYPATH=/home/$USER/ismart-market
     - /usr/local/bin/npm ci --omit=dev --prefix $DEPLOYPATH --ignore-scripts
 
     # 2. Regenerate Prisma client (provider may have changed)

@@ -7,17 +7,17 @@ async function main() {
   console.log('Seeding database...')
 
   // ── Admin user ─────────────────────────────────────────────────────────────
-  const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@ibird.bh' } })
+  const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@ismart.market' } })
   if (!existingAdmin) {
     await prisma.user.create({
       data: {
-        email: 'admin@ibird.bh',
-        name: 'iBird Admin',
+        email: 'admin@ismart.market',
+        name: 'iSmart Admin',
         passwordHash: await bcrypt.hash('admin123456', 12),
         role: 'SUPER_ADMIN',
       },
     })
-    console.log('Created admin user: admin@ibird.bh / admin123456')
+    console.log('Created admin user: admin@ismart.market / admin123456')
     console.log('IMPORTANT: Change this password immediately after first login!')
   }
 
@@ -40,7 +40,7 @@ async function main() {
   // ── Default settings ───────────────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const defaultSettings: Array<{ key: string; value: any }> = [
-    { key: 'company.name', value: 'iBird Electronics' },
+    { key: 'company.name', value: 'iSmart Market' },
     { key: 'company.currency', value: 'BHD' },
     { key: 'company.address', value: 'Bahrain' },
     { key: 'currency.rates', value: { USD: 0.376, CNY: 0.052 } }, // to BHD

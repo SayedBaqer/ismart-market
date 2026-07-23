@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const [, apiKey, apiSecret, cloudName] = match
 
   const timestamp = String(Math.floor(Date.now() / 1000))
-  const folder = 'ibird'
+  const folder = 'ismart'
   const paramsToSign = `folder=${folder}&timestamp=${timestamp}`
   const signature = createHash('sha256').update(paramsToSign + apiSecret).digest('hex')
 

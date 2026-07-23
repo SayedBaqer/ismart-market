@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# deploy.sh — One-command VPS deploy for ibird Portal
+# deploy.sh — One-command VPS deploy for iSmart Market
 # Usage: bash deploy.sh
 # Prerequisites: Node.js ≥18, npm, git
 
 set -e
 
-echo "=== ibird Portal Deploy ==="
+echo "=== iSmart Market Deploy ==="
 echo ""
 
 # ── 1. Pull latest code ───────────────────────────────────────────────────────
@@ -34,8 +34,8 @@ if ! command -v pm2 &>/dev/null; then
   npm install -g pm2
 fi
 
-if pm2 list | grep -q "ibird-portal"; then
-  pm2 reload ibird-portal --update-env
+if pm2 list | grep -q "ismart-market"; then
+  pm2 reload ismart-market --update-env
 else
   pm2 start ecosystem.config.js
   pm2 save
@@ -50,5 +50,5 @@ echo "[6/6] Deploy complete!"
 echo ""
 echo "  Portal URL : http://$(curl -s ifconfig.me 2>/dev/null || echo 'YOUR_SERVER_IP'):${PORT:-3000}"
 echo "  PM2 status : pm2 status"
-echo "  Live logs  : pm2 logs ibird-portal"
+echo "  Live logs  : pm2 logs ismart-market"
 echo ""

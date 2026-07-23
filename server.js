@@ -22,7 +22,7 @@ function ensureSecret() {
     const secret = crypto.randomBytes(32).toString('base64')
     content = `NEXTAUTH_SECRET="${secret}"\n${content}`
     fs.writeFileSync(ENV_FILE, content, 'utf-8')
-    console.log('[ibird] NEXTAUTH_SECRET generated and saved to .env.local')
+    console.log('[ismart] NEXTAUTH_SECRET generated and saved to .env.local')
     return true // signals a restart may be helpful but not required
   }
   return false
@@ -47,7 +47,7 @@ loadEnv()
 const port = process.env.PORT || 3000
 const hostname = process.env.HOSTNAME || '0.0.0.0'
 
-console.log(`[ibird] Starting portal on port ${port}…`)
+console.log(`[ismart] Starting portal on port ${port}…`)
 
 // Start Next.js production server
 const next = spawn(
@@ -61,7 +61,7 @@ const next = spawn(
 )
 
 next.on('exit', (code) => {
-  console.log(`[ibird] Server exited with code ${code}`)
+  console.log(`[ismart] Server exited with code ${code}`)
   process.exit(code ?? 0)
 })
 
