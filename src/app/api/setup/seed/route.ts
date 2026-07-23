@@ -2,16 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
-// One-time seed endpoint — protected by SEED_SECRET env var
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const secret = searchParams.get('secret')
+  if (!secret || secret !== process.env.SEED_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return runSeed()
+}
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-seed-secret')
   if (!secret || secret !== process.env.SEED_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  return runSeed()
+}
 
+async function runSeed() {
   const results: string[] = []
 
-  // Admin user
   const existing = await prisma.user.findUnique({ where: { email: 'admin@ismart.market' } })
   if (!existing) {
     await prisma.user.create({
@@ -23,18 +33,16 @@ export async function POST(req: NextRequest) {
         role: 'SUPER_ADMIN',
       },
     })
-    results.push('Created admin user: admin / admin123456')
+    results.push('✅ Created admin user')
   } else {
-    // Ensure username is set on existing admin
     if (!existing.username) {
       await prisma.user.update({ where: { id: existing.id }, data: { username: 'admin' } })
-      results.push('Updated admin username to: admin')
+      results.push('✅ Updated admin username')
     } else {
-      results.push('Admin user already exists')
+      results.push('ℹ️ Admin already exists')
     }
   }
 
-  // Default categories
   const cats = [
     { name: 'Electronics', slug: 'electronics' },
     { name: 'Clothing', slug: 'clothing' },
@@ -48,9 +56,8 @@ export async function POST(req: NextRequest) {
       create: { ...cat, displayOrder: cats.indexOf(cat) },
     })
   }
-  results.push('Categories ready')
+  results.push('✅ Categories ready')
 
-  // Default settings
   const defaults = [
     { key: 'company.name', value: 'iSmart Market' },
     { key: 'company.currency', value: 'BHD' },
@@ -60,7 +67,7 @@ export async function POST(req: NextRequest) {
   for (const { key, value } of defaults) {
     await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value } })
   }
-  results.push('Default settings ready')
+  results.push('✅ Settings ready')
 
   return NextResponse.json({ success: true, results })
 }
