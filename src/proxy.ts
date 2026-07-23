@@ -14,7 +14,6 @@ const ROUTE_CAPS: Array<{ prefix: string; cap: Parameters<typeof hasCapability>[
   { prefix: '/admin/products', cap: 'products.view' },
   { prefix: '/admin/categories', cap: 'categories.view' },
   { prefix: '/admin/stock', cap: 'stock.view' },
-  { prefix: '/admin/assemblies', cap: 'stock.view' },
   { prefix: '/admin/billing', cap: 'billing.view' },
   { prefix: '/admin/expenses', cap: 'billing.view' },
   { prefix: '/admin/customers', cap: 'customers.view' },

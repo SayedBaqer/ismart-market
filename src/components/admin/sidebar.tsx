@@ -9,7 +9,7 @@ import type { UserRole } from '@prisma/client'
 import type { Capability } from '@/lib/auth/capabilities'
 import {
   LayoutDashboard, Package, Tag, BarChart3,
-  Users, ShoppingCart, Layers, Newspaper, Settings, Plug,
+  Users, ShoppingCart, Newspaper, Settings, Plug,
   TrendingUp, Receipt, Warehouse, Building2, LayoutList, ClipboardCheck, Globe,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
@@ -46,7 +46,6 @@ const navGroups: NavGroup[] = [
     label: 'Operations',
     items: [
       { href: '/admin/stock', icon: Warehouse, label: 'Stock', cap: 'stock.view' },
-      { href: '/admin/assemblies', icon: Layers, label: 'Assemblies', cap: 'stock.view' },
       { href: '/admin/orders', icon: ShoppingCart, label: 'Orders', cap: 'orders.view' },
     ],
   },
