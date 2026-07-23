@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read", "Write", "Edit", "Glob", "Grep", "Agent",
+      "Bash(*)",
+      "PowerShell(*)"
+    ]
+  }
+}

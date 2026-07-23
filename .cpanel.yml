@@ -1,0 +1,19 @@
+---
+# .cpanel.yml — cPanel Git Version Control deployment hooks
+# Runs automatically after every git push to this repository.
+# Docs: https://docs.cpanel.net/knowledge-base/web-services/guide-to-git-version-control/
+
+deployment:
+  tasks:
+    # 1. Install only production dependencies (faster, smaller)
+    - export DEPLOYPATH=/home/$USER/ibird-portal
+    - /usr/local/bin/npm ci --omit=dev --prefix $DEPLOYPATH --ignore-scripts
+
+    # 2. Regenerate Prisma client (provider may have changed)
+    - cd $DEPLOYPATH && /usr/local/bin/npx prisma generate
+
+    # 3. Build Next.js for production
+    - cd $DEPLOYPATH && /usr/local/bin/npm run build
+
+    # 4. Ensure log directory exists
+    - mkdir -p $DEPLOYPATH/logs

@@ -1,0 +1,652 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MULTI-TENANT: SHOPS
+// Each "shop" is an independent business tenant on the platform.
+// Phase 1: single-tenant (shopId = null means "platform default shop").
+// Phase 11+: multi-tenant marketplace — each shop has its own products,
+//            orders, billing; platform admins approve/reject listings.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Shop {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  domain      String?    @unique   // custom domain or subdomain
+  description String?
+  logoUrl     String?
+  bannerUrl   String?
+  email       String?
+  phone       String?
+  address     String?
+  currency    String     @default("BHD")
+  language    String     @default("en")
+  status      ShopStatus @default(PENDING)  // pending approval → active → suspended
+  plan        ShopPlan   @default(FREE)
+  planExpiry  DateTime?
+  settings    Json       @default("{}")
+  meta        Json       @default("{}")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  users       ShopUser[]   // staff of this shop
+  products    Product[]
+  categories  Category[]
+  orders      Order[]
+  customers   Customer[]
+  documents   Document[]
+  news        ShopNews[]
+
+  @@map("shops")
+}
+
+model ShopNews {
+  id          String     @id @default(cuid())
+  shopId      String
+  shop        Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User       @relation("ShopNewsAuthor", fields: [authorId], references: [id])
+  reviewerId  String?
+  reviewer    User?      @relation("ShopNewsReviewer", fields: [reviewerId], references: [id])
+  title       String
+  body        String     @db.Text
+  imageUrl    String?
+  status      NewsStatus @default(DRAFT)
+  reviewNote  String?
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("shop_news")
+}
+
+enum NewsStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum ShopStatus {
+  PENDING     // awaiting platform admin approval
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum ShopPlan {
+  FREE        // basic listing (products require approval)
+  STARTER     // paid tier 1
+  BUSINESS    // paid tier 2 (delivery integration, analytics)
+  ENTERPRISE  // custom
+}
+
+// Junction: which users belong to which shop, with what role
+model ShopUser {
+  id       String   @id @default(cuid())
+  shopId   String
+  shop     Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     UserRole @default(STAFF)
+  joinedAt DateTime @default(now())
+
+  @@unique([shopId, userId])
+  @@map("shop_users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  role          UserRole  @default(STAFF)
+  capabilities  Json      @default("{}")   // granular overrides on top of role defaults
+  apiTokenHash  String?                    // hashed 90-day API token
+  apiTokenExp   DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Multi-tenant shop memberships
+  shopUsers     ShopUser[]
+  shopNews      ShopNews[] @relation("ShopNewsAuthor")
+  reviewedNews  ShopNews[] @relation("ShopNewsReviewer")
+
+  // Business relations
+  orders          Order[]   @relation("OrderCreatedBy")
+  deliveryOrders  Order[]   @relation("OrderDelivery")
+  adjustments     StockAdjustment[]
+  documents     Document[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER    // Shop Owner
+  STAFF      // Sales person
+  CASHIER    // Delivery person
+  CUSTOMER
+}
+
+// NextAuth required tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATALOGUE
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Category {
+  id           String     @id @default(cuid())
+  shopId       String?    // null = platform default (single-tenant mode)
+  shop         Shop?      @relation(fields: [shopId], references: [id])
+  name         String
+  slug         String     @unique
+  description  String?
+  imageUrl     String?
+  parentId     String?
+  parent       Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[] @relation("CategoryTree")
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  meta         Json       @default("{}")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  products     Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String           @id @default(cuid())
+  shopId       String?
+  shop         Shop?            @relation(fields: [shopId], references: [id])
+  sku          String           @unique
+  name         String
+  slug         String           @unique
+  description  String?
+  price        Decimal          @db.Decimal(18, 4) @default(0)
+  comparePrice Decimal?         @db.Decimal(18, 4)
+  images       Json             @default("[]")      // string[]
+  categoryId   String?
+  category     Category?        @relation(fields: [categoryId], references: [id])
+  isActive     Boolean          @default(true)      // published to store
+  isHidden     Boolean          @default(false)     // hidden from store but usable in invoices
+  trackStock   Boolean          @default(true)
+  weight       Decimal?         @db.Decimal(10, 3)
+  meta         Json             @default("{}")      // extensible by plugins
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  variants     ProductVariant[]
+  stockMeta    StockMeta?
+  fifoBatches  FifoBatch[]
+  adjustments  StockAdjustment[]
+  orderItems   OrderItem[]
+  assemblyComponents AssemblyComponent[]
+  asAssembly   Assembly?
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String   @unique
+  attributes Json     @default("{}")   // { "color": "Red", "size": "L" }
+  price      Decimal  @db.Decimal(18, 4) @default(0)
+  stockQty   Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("product_variants")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STOCK & FIFO
+// ─────────────────────────────────────────────────────────────────────────────
+
+model StockMeta {
+  id              String   @id @default(cuid())
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currentQty      Int      @default(0)
+  avgCostCny      Decimal  @db.Decimal(18, 4) @default(0)
+  avgCostBhd      Decimal  @db.Decimal(18, 4) @default(0)
+  stockLimit      Int?
+  threshold       Int?     // low-stock alert threshold
+  notes           String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("stock_meta")
+}
+
+model FifoBatch {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  qtyReceived    Decimal  @db.Decimal(14, 4)
+  qtyRemaining   Decimal  @db.Decimal(14, 4)
+  unitCostCny    Decimal  @db.Decimal(18, 4)
+  unitCostBhd    Decimal  @db.Decimal(18, 4)
+  costAdjustment Decimal  @db.Decimal(18, 4) @default(0)
+  reference      String?  // PO number or import ref
+  receivedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@map("fifo_batches")
+}
+
+model StockAdjustment {
+  id          String              @id @default(cuid())
+  productId   String
+  product     Product             @relation(fields: [productId], references: [id])
+  type        StockAdjustmentType
+  qtyBefore   Decimal             @db.Decimal(14, 4)
+  qtyChange   Decimal             @db.Decimal(14, 4)
+  qtyAfter    Decimal             @db.Decimal(14, 4)
+  costBhd     Decimal?            @db.Decimal(18, 4)
+  reason      String?
+  reference   String?             // order ID, invoice ID, etc.
+  createdById String?
+  createdBy   User?               @relation(fields: [createdById], references: [id])
+  createdAt   DateTime            @default(now())
+
+  @@map("stock_adjustments")
+}
+
+enum StockAdjustmentType {
+  IMPORT      // received stock
+  SALE        // sold (order/invoice)
+  DEFECT      // damaged
+  MANUAL      // manual correction
+  ASSEMBLY    // component consumed in assembly
+  RETURN      // customer return
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASSEMBLIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Assembly {
+  id           String              @id @default(cuid())
+  productId    String              @unique
+  product      Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  extraCharge  Decimal             @db.Decimal(18, 4) @default(0)
+  totalCostBhd Decimal             @db.Decimal(18, 4) @default(0)
+  notes        String?
+  updatedAt    DateTime            @updatedAt
+
+  components   AssemblyComponent[]
+  externalItems AssemblyExternalItem[]
+
+  @@map("assemblies")
+}
+
+model AssemblyComponent {
+  id          String   @id @default(cuid())
+  assemblyId  String
+  assembly    Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  qty         Decimal  @db.Decimal(14, 4)
+  sortOrder   Int      @default(0)
+
+  @@map("assembly_components")
+}
+
+model AssemblyExternalItem {
+  id         String   @id @default(cuid())
+  assemblyId String
+  assembly   Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+  name       String
+  qty        Decimal  @db.Decimal(14, 4)
+  unitCost   Decimal  @db.Decimal(18, 4)
+  sortOrder  Int      @default(0)
+
+  @@map("assembly_external_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Customer {
+  id             String     @id @default(cuid())
+  shopId         String?
+  shop           Shop?      @relation(fields: [shopId], references: [id])
+  displayName    String
+  mobile         String
+  email          String?
+  phone          String?
+  taxNumber      String?
+  billingAddress String?
+  shippingAddress String?
+  currency       String     @default("BHD")
+  isSupplier     Boolean    @default(false)
+  notes          String?
+  userId         String?    // linked portal user account
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  orders         Order[]
+  documents      Document[]
+
+  @@map("customers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDERS (storefront)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Order {
+  id              String      @id @default(cuid())
+  shopId          String?
+  shop            Shop?       @relation(fields: [shopId], references: [id])
+  orderNumber     String      @unique
+  status          OrderStatus @default(PENDING)
+  customerId      String?
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  customerEmail   String?
+  customerName    String?
+  shippingAddress Json        @default("{}")
+  billingAddress  Json        @default("{}")
+  lineItems       OrderItem[]
+  subtotal        Decimal     @db.Decimal(18, 4) @default(0)
+  discountTotal   Decimal     @db.Decimal(18, 4) @default(0)
+  taxTotal        Decimal     @db.Decimal(18, 4) @default(0)
+  shippingTotal   Decimal     @db.Decimal(18, 4) @default(0)
+  grandTotal      Decimal     @db.Decimal(18, 4) @default(0)
+  currency        String      @default("BHD")
+  paymentMethod     String?
+  notes             String?
+  meta              Json            @default("{}")
+  createdById       String?
+  createdBy         User?           @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  // Delivery tracking
+  deliveryStatus    DeliveryStatus  @default(NOT_ASSIGNED)
+  assignedToId      String?
+  assignedTo        User?           @relation("OrderDelivery", fields: [assignedToId], references: [id])
+  deliveryNotes     String?
+  estimatedDelivery DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@map("orders")
+}
+
+enum DeliveryStatus {
+  NOT_ASSIGNED
+  ASSIGNED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  RETURNED
+}
+
+model OrderItem {
+  id                String   @id @default(cuid())
+  orderId           String
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId         String?
+  product           Product? @relation(fields: [productId], references: [id])
+  name              String
+  sku               String?
+  qty               Decimal  @db.Decimal(14, 4)
+  unitPrice         Decimal  @db.Decimal(18, 4)
+  unitCostSnapshot  Decimal? @db.Decimal(18, 4)
+  discountPct       Decimal  @db.Decimal(7, 4) @default(0)
+  taxPct            Decimal  @db.Decimal(7, 4) @default(0)
+  lineTotal         Decimal  @db.Decimal(18, 4)
+  sortOrder         Int      @default(0)
+
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BILLING DOCUMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Document {
+  id              String       @id @default(cuid())
+  shopId          String?
+  shop            Shop?        @relation(fields: [shopId], references: [id])
+  docType         DocType
+  docNumber       String?
+  status          String       @default("draft")
+  customerId      String?
+  customer        Customer?    @relation(fields: [customerId], references: [id])
+  issueDate       DateTime     @default(now())
+  dueDate         DateTime?
+  expiryDate      DateTime?
+  currency        String       @default("BHD")
+  exchangeRate    Decimal      @db.Decimal(18, 6) @default(1)
+  subtotal        Decimal      @db.Decimal(18, 4) @default(0)
+  discountTotal   Decimal      @db.Decimal(18, 4) @default(0)
+  taxTotal        Decimal      @db.Decimal(18, 4) @default(0)
+  shippingTotal   Decimal      @db.Decimal(18, 4) @default(0)
+  grandTotal      Decimal      @db.Decimal(18, 4) @default(0)
+  grandTotalBase  Decimal      @db.Decimal(18, 4) @default(0)  // in BHD
+  amountPaid      Decimal      @db.Decimal(18, 4) @default(0)
+  contactPhone    String?
+  notes           String?
+  terms           String?
+  convertedFromId String?
+  meta            Json         @default("{}")
+  createdById     String?
+  createdBy       User?        @relation(fields: [createdById], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  items           DocumentItem[]
+  payments        Payment[]
+
+  @@unique([docType, docNumber])
+  @@map("documents")
+}
+
+model DocumentItem {
+  id               String    @id @default(cuid())
+  documentId       String
+  document         Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  productId        String?
+  variationId      String?
+  name             String
+  sku              String?
+  description      String?
+  qty              Decimal   @db.Decimal(14, 4)
+  unitPrice        Decimal   @db.Decimal(18, 4)
+  unitCostSnapshot Decimal?  @db.Decimal(18, 4)
+  discountPct      Decimal   @db.Decimal(7, 4) @default(0)
+  taxPct           Decimal   @db.Decimal(7, 4) @default(0)
+  lineTotal        Decimal   @db.Decimal(18, 4)
+  serial           String?
+  warranty         String?
+  sortOrder        Int       @default(0)
+
+  @@map("document_items")
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  amount     Decimal  @db.Decimal(18, 4)
+  currency   String   @default("BHD")
+  method     String   @default("cash")  // cash/bank/card/other
+  reference  String?
+  paidAt     DateTime @default(now())
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@map("payments")
+}
+
+enum DocType {
+  ESTIMATE
+  INVOICE
+  SALES_ORDER
+  PURCHASE_ORDER
+  CREDIT_NOTE
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPENSES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Expense {
+  id          String            @id @default(cuid())
+  category    String
+  description String?
+  amount      Decimal           @db.Decimal(18, 4)
+  currency    String            @default("BHD")
+  amountBase  Decimal           @db.Decimal(18, 4)
+  expenseDate DateTime
+  recurrence  ExpenseRecurrence @default(ONCE)
+  periodStart DateTime?
+  periodEnd   DateTime?
+  vendor      String?
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("expenses")
+}
+
+enum ExpenseRecurrence {
+  ONCE
+  MONTHLY
+  YEARLY
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEWS / BLOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model NewsPost {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String
+  imageUrl    String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("news_posts")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLUGINS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Plugin {
+  slug      String   @id
+  name      String
+  version   String
+  active    Boolean  @default(false)
+  config    Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@map("plugins")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // e.g. "product.create", "stock.adjust"
+  resource   String?  // resource type
+  resourceId String?  // resource ID
+  meta       Json     @default("{}")
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}

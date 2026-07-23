@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* ── Default theme: Ocean Blue ── */
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --primary-foreground: #ffffff;
+  --accent: #3b82f6;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --radius: 0.5rem;
+  --hero-from: #0f172a;
+  --hero-to: #1e3a5f;
+}
+
+/* ── Royal Purple ── */
+[data-theme="purple"] {
+  --primary: #7c3aed;
+  --primary-dark: #6d28d9;
+  --primary-light: #ede9fe;
+  --accent: #8b5cf6;
+  --hero-from: #1e1b4b;
+  --hero-to: #3b0764;
+}
+
+/* ── Forest Green ── */
+[data-theme="green"] {
+  --primary: #059669;
+  --primary-dark: #047857;
+  --primary-light: #d1fae5;
+  --accent: #10b981;
+  --hero-from: #022c22;
+  --hero-to: #064e3b;
+}
+
+/* ── Midnight Dark ── */
+[data-theme="dark"] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --primary: #f59e0b;
+  --primary-dark: #d97706;
+  --primary-light: #fef3c7;
+  --primary-foreground: #0f172a;
+  --accent: #fbbf24;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #334155;
+  --hero-from: #0f172a;
+  --hero-to: #1e293b;
+}
+
+/* ── Coral Warm ── */
+[data-theme="coral"] {
+  --primary: #e11d48;
+  --primary-dark: #be123c;
+  --primary-light: #ffe4e6;
+  --accent: #f43f5e;
+  --hero-from: #1c0a14;
+  --hero-to: #4c0519;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* iOS Safari: make all buttons and links respond to taps reliably */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Admin shell: fill the viewport without position:fixed (avoids iOS scroll-capture bug) */
+.admin-shell {
+  height: 100dvh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Theme-aware store elements ── */
+.store-primary-bg { background-color: var(--primary); }
+.store-primary-text { color: var(--primary); }
+.store-primary-border { border-color: var(--primary); }
+.store-primary-btn {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.store-primary-btn:hover { background-color: var(--primary-dark); }
+
+/* RTL support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--muted); }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
