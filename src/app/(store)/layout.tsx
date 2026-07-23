@@ -3,6 +3,8 @@ import { StoreFooter } from '@/components/store/footer'
 import { CartSidebar } from '@/components/store/cart-sidebar'
 import { TermsGate } from '@/components/store/terms-gate'
 import { LangProvider } from '@/components/store/lang-provider'
+import { MobileNav } from '@/components/store/mobile-nav'
+import { PwaInstallBanner } from '@/components/pwa-install-banner'
 import { getSetting } from '@/lib/services/settings.service'
 import { getStoreLang } from '@/lib/i18n/get-store-lang'
 
@@ -19,9 +21,13 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col">
       <LangProvider lang={lang} />
       <StoreHeader />
-      <main className="flex-1">{children}</main>
-      <StoreFooter />
+      <main className="flex-1 pb-14 sm:pb-0">{children}</main>
+      <div className="hidden sm:block">
+        <StoreFooter />
+      </div>
       <CartSidebar />
+      <MobileNav />
+      <PwaInstallBanner />
       <TermsGate
         version={parseInt(termsVersion ?? '1', 10)}
         content={termsContent ?? ''}

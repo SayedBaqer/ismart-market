@@ -1,7 +1,8 @@
-const CACHE = 'ismart-v1'
+const CACHE = 'ismart-v2'
 const STATIC = [
   '/',
   '/products',
+  '/offline',
   '/manifest.json',
 ]
 
@@ -33,7 +34,7 @@ self.addEventListener('fetch', (e) => {
     return
   }
 
-  // Network-first for Next.js pages; cache-first for static assets
+  // Cache-first for static assets
   const isStatic = /\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|css|js)$/.test(url.pathname)
 
   if (isStatic) {
@@ -47,6 +48,7 @@ self.addEventListener('fetch', (e) => {
       )
     )
   } else {
+    // Network-first for pages; fall back to offline page
     e.respondWith(
       fetch(request)
         .then((res) => {
@@ -54,7 +56,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((c) => c.put(request, clone))
           return res
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request) || caches.match('/offline'))
     )
   }
 })
