@@ -36,6 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
-  await prisma.shop.update({ where: { id: shopId }, data: { settings: updated } })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await prisma.shop.update({ where: { id: shopId }, data: { settings: updated as any } })
   return NextResponse.json({ success: true, action })
 }

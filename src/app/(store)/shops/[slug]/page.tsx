@@ -216,7 +216,7 @@ export default async function ShopPublicPage({ params }: Props) {
   )
 }
 
-function defaultSections() {
+function defaultSections(): { type: string; enabled: boolean; config?: Record<string, unknown> }[] {
   return [
     { type: 'top-sellers', enabled: true },
     { type: 'new-arrivals', enabled: true },

@@ -94,7 +94,7 @@ export default function NewDocPage() {
     ]).then(([cRes, pRes, settings]) => {
       setCustomers(Array.isArray(cRes.customers) ? cRes.customers : [])
       setProducts(Array.isArray(pRes.items) ? pRes.items : [])
-      const t = settings['document.terms.default'] ?? ''
+      const t = String((settings as Record<string, unknown>)['document.terms.default'] ?? '')
       setSavedTerms(t)
       if (t && !terms) setTerms(t)
     }).catch(() => {}).finally(() => setLoadingData(false))

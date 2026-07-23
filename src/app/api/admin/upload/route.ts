@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     const signature = createHash('sha256').update(paramsToSign + apiSecret).digest('hex')
 
     const form = new FormData()
-    form.append('file', new Blob([processed], { type: contentType }))
+    form.append('file', new Blob([new Uint8Array(processed)], { type: contentType }))
     form.append('folder', folder)
     form.append('timestamp', timestamp)
     form.append('api_key', apiKey)
