@@ -12,13 +12,16 @@ async function main() {
     await prisma.user.create({
       data: {
         email: 'admin@ismart.market',
+        username: 'admin',
         name: 'iSmart Admin',
         passwordHash: await bcrypt.hash('admin123456', 12),
         role: 'SUPER_ADMIN',
       },
     })
-    console.log('Created admin user: admin@ismart.market / admin123456')
-    console.log('IMPORTANT: Change this password immediately after first login!')
+    console.log('Created admin user:')
+    console.log('  Username: admin  |  Password: admin123456')
+    console.log('  Email: admin@ismart.market  |  Password: admin123456')
+    console.log('IMPORTANT: Change this password after first login!')
   }
 
   // ── Default categories ─────────────────────────────────────────────────────

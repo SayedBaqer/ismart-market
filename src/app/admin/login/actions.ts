@@ -7,12 +7,12 @@ export async function loginAction(
   _prev: { error: string } | null,
   formData: FormData,
 ): Promise<{ error: string } | null> {
-  const email = (formData.get('email') as string) ?? ''
+  const identifier = (formData.get('identifier') as string) ?? ''
   const password = (formData.get('password') as string) ?? ''
   const callbackUrl = (formData.get('callbackUrl') as string) || '/admin'
 
   try {
-    await signIn('credentials', { email, password, redirectTo: callbackUrl })
+    await signIn('credentials', { identifier, password, redirectTo: callbackUrl })
   } catch (err) {
     // Next.js redirect() throws a special error — re-throw so the redirect happens
     if ((err as { digest?: string })?.digest?.startsWith('NEXT_REDIRECT')) {

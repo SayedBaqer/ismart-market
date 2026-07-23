@@ -8,8 +8,8 @@ import { roleCapabilities } from '@/lib/auth/capabilities'
 import type { UserRole } from '@prisma/client'
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  identifier: z.string().min(1),
+  password: z.string().min(1),
 })
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -23,15 +23,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Credentials({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        identifier: { label: 'Email or Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
+        const { identifier, password } = parsed.data
+        const isEmail = identifier.includes('@')
+
+        const user = await prisma.user.findFirst({
+          where: isEmail
+            ? { email: identifier }
+            : { OR: [{ username: identifier }, { email: identifier }] },
           select: {
             id: true,
             email: true,
@@ -45,7 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.isActive || !user.passwordHash) return null
 
-        const valid = await bcrypt.compare(parsed.data.password, user.passwordHash)
+        const valid = await bcrypt.compare(password, user.passwordHash)
         if (!valid) return null
 
         return {

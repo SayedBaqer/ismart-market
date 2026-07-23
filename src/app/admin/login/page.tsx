@@ -19,9 +19,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
-            <span className="text-lg font-bold text-white">iB</span>
+            <span className="text-lg font-bold text-white">iS</span>
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Portal Admin</h1>
+          <h1 className="text-xl font-semibold text-gray-900">iSmart Market Admin</h1>
           <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
 
@@ -35,12 +35,12 @@ export default function LoginPage() {
           )}
 
           <Input
-            label="Email"
-            type="email"
-            name="email"
+            label="Email or Username"
+            type="text"
+            name="identifier"
             required
-            autoComplete="email"
-            placeholder="admin@example.com"
+            autoComplete="username"
+            placeholder="admin or admin@example.com"
           />
 
           <Input
