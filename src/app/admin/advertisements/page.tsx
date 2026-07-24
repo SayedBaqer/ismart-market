@@ -31,6 +31,7 @@ const EMPTY: Partial<Ad> = {
 
 const TYPE_LABELS: Record<string, string> = {
   BANNER: 'Hero Banner', SHOP: 'Shop Promo', PRODUCT: 'Product/Sale', NEWS: 'Announcement',
+  MERCHANT: 'Open a Shop Promo',
 }
 
 export default function AdvertisementsPage() {

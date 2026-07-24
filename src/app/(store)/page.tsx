@@ -3,7 +3,7 @@ import { getSetting } from '@/lib/services/settings.service'
 import { AdCarousel } from '@/components/store/sections/ad-carousel'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Package, Trophy, Flame, Sparkles, ChevronRight, Store, ArrowRight } from 'lucide-react'
+import { Package, Trophy, Flame, Sparkles, ChevronRight, Store, ArrowRight, Crown, ShoppingCart, Truck } from 'lucide-react'
 import { getStoreT } from '@/lib/i18n/get-store-lang'
 import { t as tc } from '@/lib/i18n/translate-content'
 
@@ -112,13 +112,13 @@ export default async function HomePage() {
   const i18n = await getStoreT()
   const lang = i18n.lang
 
-  const [ads, categories, topSellers, onSale, topViewed, newArrivals, topShops, currency, storeName] =
+  const [allAds, categories, topSellers, onSale, topViewed, newArrivals, topShops, currency, storeName] =
     await Promise.all([
       prisma.advertisement.findMany({
         where: { isActive: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
-        take: 8,
-        select: { id: true, title: true, subtitle: true, imageUrl: true, ctaText: true, ctaUrl: true, bgColor: true, textColor: true },
+        take: 12,
+        select: { id: true, title: true, subtitle: true, imageUrl: true, ctaText: true, ctaUrl: true, bgColor: true, textColor: true, type: true },
       }).catch(() => []),
 
       prisma.category.findMany({
@@ -169,6 +169,9 @@ export default async function HomePage() {
 
   const curr = currency ?? 'BHD'
   const name = storeName ?? 'iSmart Market'
+
+  const ads = (allAds as Array<typeof allAds[0] & { type?: string }>).filter(a => a.type !== 'MERCHANT')
+  const merchantAds = (allAds as Array<typeof allAds[0] & { type?: string }>).filter(a => a.type === 'MERCHANT')
 
   const hotDeals = onSale.filter(p => p.comparePrice && Number(p.comparePrice) > Number(p.price))
 
@@ -289,6 +292,86 @@ export default async function HomePage() {
                   <span className="text-[10px] text-gray-400">{shop._count.products} {i18n.products}</span>
                 </Link>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Open Your Shop Promo ─────────────────────────────────────── */}
+        {merchantAds.length > 0 ? (
+          merchantAds.map((ad) => (
+            <section key={ad.id} className="-mx-4 sm:mx-0 rounded-3xl overflow-hidden"
+              style={{ background: ad.imageUrl ? undefined : ad.bgColor }}>
+              {ad.imageUrl && (
+                <div className="relative">
+                  <Image src={ad.imageUrl} alt={ad.title} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/50" />
+                </div>
+              )}
+              <div className="relative px-6 py-8 sm:py-10 text-center" style={{ color: ad.textColor }}>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">{lang === 'ar' ? 'فرصتك الآن' : 'Your chance'}</p>
+                <h2 className="text-2xl sm:text-3xl font-black mb-2">{ad.title}</h2>
+                {ad.subtitle && <p className="text-sm opacity-80 mb-6">{ad.subtitle}</p>}
+                <div className="flex justify-center gap-6 mb-6">
+                  {[
+                    { Icon: Crown, label: lang === 'ar' ? 'المالك' : 'Owner' },
+                    { Icon: ShoppingCart, label: lang === 'ar' ? 'البائع' : 'Sales' },
+                    { Icon: Truck, label: lang === 'ar' ? 'التوصيل' : 'Delivery' },
+                  ].map(({ Icon, label }) => (
+                    <div key={label} className="flex flex-col items-center gap-1.5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+                        <Icon className="h-5 w-5" style={{ color: ad.textColor }} />
+                      </div>
+                      <span className="text-xs font-bold opacity-90">{label}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link href={`/account?tab=register&next=${encodeURIComponent(ad.ctaUrl)}`}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3 text-sm font-bold shadow-lg hover:opacity-90 transition-opacity"
+                  style={{ color: ad.bgColor }}>
+                  {ad.ctaText} <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </section>
+          ))
+        ) : (
+          <section className="-mx-4 sm:mx-0 rounded-3xl overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700">
+            <div className="relative px-6 py-8 sm:py-10 text-center"
+              style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200 mb-2">
+                {lang === 'ar' ? 'فرصتك الآن — مجاناً' : 'Your chance — for free'}
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                {lang === 'ar' ? 'افتح متجرك اليوم' : 'Start selling today'}
+              </h2>
+              <p className="text-sm text-blue-200 mb-7 max-w-sm mx-auto">
+                {lang === 'ar'
+                  ? 'حسابات مستقلة للمالك والبائع والتوصيل — كلها مضمنة مجاناً'
+                  : 'Separate accounts for Owner, Sales & Delivery — all included free'}
+              </p>
+
+              <div className="flex justify-center gap-5 mb-7">
+                {[
+                  { Icon: Crown,        label: lang === 'ar' ? 'المالك'   : 'Owner',    color: 'bg-yellow-400/20 text-yellow-300' },
+                  { Icon: ShoppingCart, label: lang === 'ar' ? 'البائع'   : 'Sales',    color: 'bg-green-400/20 text-green-300'  },
+                  { Icon: Truck,        label: lang === 'ar' ? 'التوصيل' : 'Delivery', color: 'bg-purple-400/20 text-purple-300' },
+                ].map(({ Icon, label, color }) => (
+                  <div key={label} className="flex flex-col items-center gap-2">
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${color}`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="text-xs font-bold text-white/90">{label}</span>
+                    <span className="text-[10px] text-blue-300 font-semibold">
+                      {lang === 'ar' ? 'حساب خاص' : 'Own account'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/account?tab=register&next=%2Fshop%2Fwizard"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3 text-sm font-bold text-blue-700 shadow-xl hover:bg-blue-50 transition-colors">
+                <Store className="h-4 w-4" />
+                {lang === 'ar' ? 'أنشئ حسابك — مجاناً' : 'Create your account — free'} <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </section>
         )}

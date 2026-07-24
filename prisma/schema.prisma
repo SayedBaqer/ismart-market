@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -677,6 +677,7 @@ enum AdType {
   SHOP        // promotes a specific shop
   PRODUCT     // promotes a specific product / sale
   NEWS        // links to a news/announcement
+  MERCHANT    // open-a-shop promo section on home page
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   User, ShoppingBag, LogOut, LayoutDashboard, Store,
   Loader2, ChevronRight, Package, CheckCircle2, Clock,
-  XCircle, Truck,
+  XCircle, Truck, Crown, ShoppingCart,
 } from 'lucide-react'
 
 import Link from 'next/link'
@@ -219,11 +219,14 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 function GuestView() {
   const t = useStoreT()
   const router = useRouter()
-  const [tab, setTab] = useState<'signin' | 'register'>('signin')
+  const searchParams = useSearchParams()
+  const nextUrl = searchParams.get('next') ?? '/'
+  const defaultTab = (searchParams.get('tab') === 'register' ? 'register' : 'signin') as 'signin' | 'register'
+  const [tab, setTab] = useState<'signin' | 'register'>(defaultTab)
 
   function onSuccess() {
+    router.push(nextUrl)
     router.refresh()
-    window.location.reload()
   }
 
   return (
@@ -283,24 +286,50 @@ function GuestView() {
       </div>
 
       {/* Open a shop CTA */}
-      <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-200">
-          <Store className="h-6 w-6 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900">
-            {t.lang === 'ar' ? 'هل تريد فتح متجرك؟' : 'Want to open your shop?'}
+      <div className="mt-6 rounded-2xl overflow-hidden border border-blue-200 bg-gradient-to-br from-blue-600 to-indigo-700 shadow-lg shadow-blue-200/50">
+        <div className="p-5">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200 mb-1">
+            {t.lang === 'ar' ? 'فرصتك الآن' : 'Your chance — right now'}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {t.lang === 'ar' ? 'ابدأ مجاناً — 1 مبيعات + 1 توصيل مجاناً' : 'Start free — 1 sales + 1 delivery included'}
+          <h3 className="text-lg font-black text-white leading-tight">
+            {t.lang === 'ar' ? 'افتح متجرك مجاناً' : 'Open your shop for free'}
+          </h3>
+          <p className="text-xs text-blue-200 mt-1 mb-4">
+            {t.lang === 'ar'
+              ? 'حساب مستقل للمالك + البائع + التوصيل — كلها مجاناً'
+              : 'Separate accounts for Owner, Sales & Delivery — all free'}
           </p>
+
+          {/* 3 role pills */}
+          <div className={`flex gap-2 mb-5 ${t.lang === 'ar' ? 'flex-row-reverse' : ''}`}>
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <Crown className="h-4 w-4 text-yellow-300" />
+              </div>
+              <span className="text-[10px] font-bold text-white/90">{t.lang === 'ar' ? 'المالك' : 'Owner'}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <ShoppingCart className="h-4 w-4 text-green-300" />
+              </div>
+              <span className="text-[10px] font-bold text-white/90">{t.lang === 'ar' ? 'البائع' : 'Sales'}</span>
+            </div>
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <Truck className="h-4 w-4 text-purple-300" />
+              </div>
+              <span className="text-[10px] font-bold text-white/90">{t.lang === 'ar' ? 'التوصيل' : 'Delivery'}</span>
+            </div>
+          </div>
+
+          <Link
+            href="/account?tab=register&next=/shop/wizard"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50 transition-colors shadow-sm"
+          >
+            <Store className="h-4 w-4" />
+            {t.lang === 'ar' ? 'أنشئ حسابك الآن' : 'Create your account — free'}
+          </Link>
         </div>
-        <Link
-          href="/shop/wizard"
-          className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
-        >
-          {t.lang === 'ar' ? 'ابدأ الآن' : 'Start Now'}
-        </Link>
       </div>
 
     </div>
