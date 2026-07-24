@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -513,7 +513,11 @@ export default function AccountPage() {
   }
 
   if (status === 'unauthenticated') {
-    return <GuestView />
+    return (
+      <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-400" /></div>}>
+        <GuestView />
+      </Suspense>
+    )
   }
 
   const role = session!.user.role
