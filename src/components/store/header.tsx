@@ -15,7 +15,7 @@ export async function StoreHeader() {
       where: { isActive: true, parentId: null },
       orderBy: { name: 'asc' },
       take: 8,
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, slug: true, meta: true },
     }).catch(() => []),
     getStoreLang(),
     getStoreT(),
@@ -52,7 +52,7 @@ export async function StoreHeader() {
               <span className="hidden sm:block text-sm font-bold text-gray-900">{name}</span>
             </Link>
 
-            {/* Search — fills remaining space */}
+            {/* Search */}
             <form action="/products" method="GET" className="flex-1 min-w-0">
               <div className="relative">
                 <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -71,7 +71,7 @@ export async function StoreHeader() {
               </div>
             </form>
 
-            {/* Actions — always visible */}
+            {/* Actions */}
             <div className="flex items-center gap-2 shrink-0">
               <LanguageSwitcher current={lang} label={t.switchLang} />
               <CartIcon />
@@ -80,10 +80,10 @@ export async function StoreHeader() {
         </div>
       </div>
 
-      {/* Category nav — client component for active-state awareness */}
+      {/* Category nav */}
       <nav className="hidden sm:block border-b border-gray-100 bg-white/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2">
-          <CategoryNav categories={categories} />
+          <CategoryNav categories={categories} lang={lang} />
         </div>
       </nav>
     </header>

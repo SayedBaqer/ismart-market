@@ -4,21 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Search, ShoppingBag, Store, User, MapPin } from 'lucide-react'
 import { useCartStore } from '@/lib/store/cart'
+import { useStoreT } from '@/lib/i18n/store-context'
 
 export function MobileNav() {
   const pathname = usePathname()
   const openCart = useCartStore((s) => s.openCart)
   const itemCount = useCartStore((s) => s.items.reduce((n, i) => n + i.qty, 0))
+  const t = useStoreT()
 
   const NAV = [
-    { href: '/', icon: Home, label: 'Home' },
-    { href: '/products', icon: Search, label: 'Browse' },
-    { href: '/shops', icon: Store, label: 'Shops' },
-    { href: '/track', icon: MapPin, label: 'Track' },
+    { href: '/', icon: Home, label: t.navHome },
+    { href: '/products', icon: Search, label: t.navBrowse },
+    { href: '/shops', icon: Store, label: t.navShops },
+    { href: '/track', icon: MapPin, label: t.navTrack },
   ]
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 bg-white sm:hidden">
+    <nav className="fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 bg-white sm:hidden" dir={t.dir}>
       <div className="flex h-14 items-center">
         {NAV.map(({ href, icon: Icon, label }) => {
           const active = pathname === href || (href !== '/' && pathname.startsWith(href))
@@ -49,18 +51,18 @@ export function MobileNav() {
               </span>
             )}
           </div>
-          <span className="text-[10px] font-medium">Cart</span>
+          <span className="text-[10px] font-medium">{t.navCart}</span>
         </button>
 
         {/* Account */}
         <Link
-          href="/shop"
+          href="/account"
           className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
-            pathname.startsWith('/shop') ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
+            pathname === '/account' ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
-          <User className={`h-5 w-5 ${pathname.startsWith('/shop') ? 'stroke-[2.5]' : ''}`} />
-          <span className="text-[10px] font-medium">Account</span>
+          <User className={`h-5 w-5 ${pathname === '/account' ? 'stroke-[2.5]' : ''}`} />
+          <span className="text-[10px] font-medium">{t.navAccount}</span>
         </Link>
       </div>
     </nav>
