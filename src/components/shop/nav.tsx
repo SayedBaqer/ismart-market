@@ -30,6 +30,7 @@ function navItems(role: string) {
     { href: `${base}/stock`, label: 'Stock', icon: Package, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/customers`, label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/billing`, label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
+    { href: `${base}/analytics`, label: 'Analytics', icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/reports`, label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
     { href: `${base}/users`, label: 'Staff Users', icon: Users, roles: ['MANAGER'] },
     { href: `${base}/news`, label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   ChevronUp, ChevronDown, Eye, EyeOff, Save, Clock,
   CheckCircle2, XCircle, AlertCircle, Settings, Store,
-  Instagram, MessageCircle, Facebook, Music2,
+  Instagram, MessageCircle, Facebook, Music2, Percent,
 } from 'lucide-react'
 
 interface DisplaySection {
@@ -61,6 +61,14 @@ export default function ShopSettingsPage() {
   const [savingSocial, setSavingSocial] = useState(false)
   const [savedSocial, setSavedSocial] = useState(false)
 
+  const [taxEnabled, setTaxEnabled] = useState(false)
+  const [taxRate, setTaxRate] = useState('10')
+  const [taxInclusive, setTaxInclusive] = useState(false)
+  const [taxLabel, setTaxLabel] = useState('VAT')
+  const [taxNumber, setTaxNumber] = useState('')
+  const [savingTax, setSavingTax] = useState(false)
+  const [savedTax, setSavedTax] = useState(false)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -87,6 +95,16 @@ export default function ShopSettingsPage() {
         setWhatsapp(links.whatsapp ?? '')
         setFacebook(links.facebook ?? '')
         setTiktok(links.tiktok ?? '')
+      }
+      const taxRes = await fetch('/api/shop/tax')
+      if (taxRes.ok) {
+        const taxData = await taxRes.json()
+        const t = taxData.tax ?? {}
+        setTaxEnabled(Boolean(t.enabled))
+        setTaxRate(String(t.rate ?? 10))
+        setTaxInclusive(Boolean(t.inclusive))
+        setTaxLabel(t.label ?? 'VAT')
+        setTaxNumber(t.number ?? '')
       }
     } finally {
       setLoading(false)
@@ -142,6 +160,20 @@ export default function ShopSettingsPage() {
       setTimeout(() => setSaved(false), 3000)
     }
     setSaving(false)
+  }
+
+  async function saveTax() {
+    setSavingTax(true)
+    const res = await fetch('/api/shop/tax', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: taxEnabled, rate: parseFloat(taxRate) || 0, inclusive: taxInclusive, label: taxLabel, number: taxNumber }),
+    })
+    if (res.ok) {
+      setSavedTax(true)
+      setTimeout(() => setSavedTax(false), 2500)
+    }
+    setSavingTax(false)
   }
 
   async function saveSocial() {
@@ -281,6 +313,75 @@ export default function ShopSettingsPage() {
         {banner && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={banner} alt="banner preview" className="w-full h-28 object-cover rounded-xl border border-gray-100" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+        )}
+      </div>
+
+      {/* Tax settings */}
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Percent className="h-4 w-4 text-gray-500" />
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Tax Settings</h2>
+              <p className="text-xs text-gray-400">Configure VAT / tax on orders · saves instantly</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={saveTax}
+            disabled={savingTax}
+            className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-700 disabled:opacity-50"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {savingTax ? 'Saving…' : savedTax ? '✓ Saved!' : 'Save Tax'}
+          </button>
+        </div>
+
+        <label className="flex items-center gap-3 cursor-pointer">
+          <div
+            onClick={() => setTaxEnabled(!taxEnabled)}
+            className={`relative h-6 w-11 rounded-full transition-colors ${taxEnabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+          >
+            <div className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${taxEnabled ? 'translate-x-5' : ''}`} />
+          </div>
+          <span className="text-sm font-medium text-gray-700">
+            {taxEnabled ? 'Tax Enabled' : 'Tax Disabled (no tax on orders)'}
+          </span>
+        </label>
+
+        {taxEnabled && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Tax Label</label>
+              <input value={taxLabel} onChange={e => setTaxLabel(e.target.value)}
+                placeholder="VAT"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Rate (%)</label>
+              <input type="number" min="0" max="100" step="0.1" value={taxRate} onChange={e => setTaxRate(e.target.value)}
+                placeholder="10"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs font-semibold text-gray-600">Tax Registration Number (optional)</label>
+              <input value={taxNumber} onChange={e => setTaxNumber(e.target.value)}
+                placeholder="e.g. BH123456789"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div className="col-span-2">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <input type="checkbox" checked={taxInclusive} onChange={e => setTaxInclusive(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 accent-blue-600" />
+                Prices are tax-inclusive (tax already included in displayed price)
+              </label>
+              <p className="text-xs text-gray-400 mt-1 ml-6">
+                {taxInclusive
+                  ? 'Tax is embedded in the price — customers see the full price only'
+                  : 'Tax will be added on top of product price at checkout'}
+              </p>
+            </div>
+          </div>
         )}
       </div>
 

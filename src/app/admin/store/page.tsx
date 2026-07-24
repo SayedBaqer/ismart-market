@@ -49,7 +49,8 @@ export default function AdminStorePage() {
       const res = await fetch('/api/admin/store/sections')
       const data = await res.json()
       if (data.value) {
-        const parsed: HomeSection[] = JSON.parse(data.value)
+        const raw = data.value
+        const parsed: HomeSection[] = typeof raw === 'string' ? JSON.parse(raw) : (raw as HomeSection[])
         const existing = new Map(parsed.map((s) => [s.type, s]))
         const merged = ALL_TYPES.map((type, i) => existing.get(type) ?? { type, enabled: false, order: i, config: {} })
         merged.sort((a, b) => a.order - b.order)

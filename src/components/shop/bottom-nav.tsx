@@ -25,6 +25,7 @@ const PRIMARY_TABS = (role: string) => [
 const MORE_ITEMS = (role: string) => [
   { href: '/shop/stock', label: 'Stock', icon: Package, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/customers', label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/analytics', label: 'Analytics', icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/billing', label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/news', label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/plugins/instagram', label: 'Instagram', icon: Instagram, roles: ['MANAGER'] },

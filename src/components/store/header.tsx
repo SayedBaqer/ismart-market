@@ -5,6 +5,7 @@ import { CartIcon } from '@/components/store/cart-icon'
 import { LanguageSwitcher } from '@/components/store/language-switcher'
 import { getStoreLang, getStoreT } from '@/lib/i18n/get-store-lang'
 import { prisma } from '@/lib/db'
+import { CategoryNav } from '@/components/store/category-nav'
 
 export async function StoreHeader() {
   const [companyName, phone, categories, lang, t] = await Promise.all([
@@ -79,24 +80,10 @@ export async function StoreHeader() {
         </div>
       </div>
 
-      {/* Category nav */}
-      <nav className="border-b border-gray-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl overflow-x-auto px-4 sm:px-6 lg:px-8 scrollbar-none" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <Link
-            href="/products"
-            className="shrink-0 py-2.5 pr-5 text-sm font-semibold text-blue-600 border-b-2 border-blue-600"
-          >
-            {t.allProducts}
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/products?category=${cat.slug}`}
-              className="shrink-0 px-5 py-2.5 text-sm text-gray-600 hover:text-blue-600 transition-colors border-b-2 border-transparent hover:border-blue-300"
-            >
-              {cat.name}
-            </Link>
-          ))}
+      {/* Category nav — client component for active-state awareness */}
+      <nav className="hidden sm:block border-b border-gray-100 bg-white/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2">
+          <CategoryNav categories={categories} />
         </div>
       </nav>
     </header>

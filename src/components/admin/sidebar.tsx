@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/shops', icon: Building2, label: 'Shops', cap: 'settings.view' },
       { href: '/admin/shops/approvals', icon: ClipboardCheck, label: 'Shop Approvals', cap: 'settings.edit', badgeKey: 'approvals' },
       { href: '/admin/commission', icon: Percent, label: 'Commission & Fees', cap: 'settings.edit' },
+      { href: '/admin/commission/ledger', icon: Receipt, label: 'Commission Ledger', cap: 'settings.edit' },
     ],
   },
   {

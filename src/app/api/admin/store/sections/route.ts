@@ -8,7 +8,12 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const setting = await prisma.setting.findUnique({ where: { key: 'home.sections' } })
-    return NextResponse.json({ value: setting?.value ?? null })
+    // Normalize: always return a string so the client can JSON.parse reliably
+    let value: string | null = null
+    if (setting?.value != null) {
+      value = typeof setting.value === 'string' ? setting.value : JSON.stringify(setting.value)
+    }
+    return NextResponse.json({ value })
   } catch {
     return NextResponse.json({ error: 'DB error' }, { status: 500 })
   }
