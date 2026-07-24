@@ -6,7 +6,7 @@ import { useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Truck, MoreHorizontal, X,
   Package, Users, FileText, BarChart3, UserPlus, Newspaper,
-  Settings, LogOut,
+  Settings, LogOut, Instagram,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
@@ -27,6 +27,7 @@ const MORE_ITEMS = (role: string) => [
   { href: '/shop/customers', label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/billing', label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/news', label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/plugins/instagram', label: 'Instagram', icon: Instagram, roles: ['MANAGER'] },
   { href: '/shop/reports', label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
   { href: '/shop/users', label: 'Staff Users', icon: UserPlus, roles: ['MANAGER'] },
   { href: '/shop/settings', label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },

@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
-import { Package, Phone, Mail, MapPin, Newspaper, ArrowRight, ChevronRight, Instagram, MessageCircle, Facebook, Music2 } from 'lucide-react'
+import { Package, Phone, Mail, MapPin, Newspaper, ChevronRight, Instagram, MessageCircle, Facebook, Music2 } from 'lucide-react'
+import { InstagramFeed } from '@/components/store/instagram-feed'
 
 export const revalidate = 60
 
@@ -47,6 +48,8 @@ export default async function ShopPublicPage({ params }: Props) {
   const bannerUrl = (display.banner as string) || shop.bannerUrl || null
   const announcement = sections.find((s) => s.type === 'announcement-bar')?.config?.text as string | undefined
   const socialLinks = (settings.socialLinks ?? {}) as Record<string, string>
+  const igPlugin = (settings.plugins as Record<string, unknown> | undefined)?.instagram as { posts?: { url: string; caption?: string; productSlug?: string }[] } | undefined
+  const igPosts = igPlugin?.posts?.filter((p) => p.url) ?? []
 
   const currency = shop.currency ?? 'BHD'
   const fmt = (n: number) => `${n.toFixed(3)} ${currency}`
@@ -211,6 +214,9 @@ export default async function ShopPublicPage({ params }: Props) {
         {sections.length === 0 && (
           <ProductSection title="All Products" emoji="📦" products={shop.products} fmt={fmt} shopSlug={slug} />
         )}
+
+        {/* Instagram plugin */}
+        {igPosts.length > 0 && <InstagramFeed posts={igPosts} />}
       </div>
     </div>
   )
