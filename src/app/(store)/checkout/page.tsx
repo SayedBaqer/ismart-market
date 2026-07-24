@@ -6,11 +6,13 @@ import { useCartStore, cartSubtotal } from '@/lib/store/cart'
 import { ShoppingBag, Truck, CreditCard, Building2, ChevronRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useStoreT } from '@/lib/i18n/store-context'
 
 export default function CheckoutPage() {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
   const clearCart = useCartStore((s) => s.clearCart)
+  const t = useStoreT()
 
   const [form, setForm] = useState({
     customerName: '',
@@ -33,11 +35,11 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-20 text-center">
+      <div className="mx-auto max-w-lg px-4 py-20 text-center" dir={t.dir}>
         <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-gray-200" />
-        <h2 className="mb-2 text-xl font-semibold text-gray-700">Your cart is empty</h2>
+        <h2 className="mb-2 text-xl font-semibold text-gray-700">{t.emptyCart}</h2>
         <Link href="/products" className="mt-4 inline-block text-blue-600 hover:underline">
-          Browse Products
+          {t.browseProducts}
         </Link>
       </div>
     )
@@ -46,7 +48,7 @@ export default function CheckoutPage() {
   async function placeOrder(e?: React.FormEvent) {
     e?.preventDefault()
     if (!form.customerName || !form.customerPhone || !form.line1) {
-      setError('Name, phone, and address are required')
+      setError(t.orderRequiredFields)
       return
     }
 
@@ -76,7 +78,7 @@ export default function CheckoutPage() {
 
     if (!res.ok) {
       const d = await res.json()
-      setError(d.error ?? 'Order failed. Please try again.')
+      setError(d.error ?? t.orderFailed)
       setLoading(false)
       return
     }
@@ -88,30 +90,35 @@ export default function CheckoutPage() {
 
   const f = (field: keyof typeof form, value: string) => setForm({ ...form, [field]: value })
 
+  const paymentOptions = [
+    { value: 'cash_on_delivery', label: t.cashOnDelivery, icon: '💵' },
+    { value: 'bank_transfer', label: t.bankTransfer, icon: '🏦' },
+    { value: 'card', label: t.cardAtDoor, icon: '💳' },
+  ]
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Checkout</h1>
+    <div className="mx-auto max-w-5xl px-4 py-8" dir={t.dir}>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t.checkoutTitle}</h1>
 
       <form onSubmit={placeOrder} className="grid gap-8 lg:grid-cols-[1fr_380px]">
         {/* Left: Form */}
         <div className="space-y-6">
           {/* Contact */}
           <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 font-semibold text-gray-900">Contact Information</h2>
+            <h2 className="mb-4 font-semibold text-gray-900">{t.contactInfo}</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-gray-700">Full Name *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.fullNameLabel}</label>
                 <input
                   required
                   autoComplete="name"
                   value={form.customerName}
                   onChange={(e) => f('customerName', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Mohammed Al-Khalid"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Phone *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.phoneLabel}</label>
                 <input
                   required
                   type="tel"
@@ -123,14 +130,13 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Email (optional)</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.emailOptional}</label>
                 <input
                   type="email"
                   autoComplete="email"
                   value={form.customerEmail}
                   onChange={(e) => f('customerEmail', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="email@example.com"
                 />
               </div>
             </div>
@@ -139,63 +145,58 @@ export default function CheckoutPage() {
           {/* Shipping */}
           <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900">
-              <Truck className="h-4 w-4 text-blue-600" /> Delivery Address
+              <Truck className="h-4 w-4 text-blue-600" /> {t.deliveryAddressLabel}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-gray-700">Street / Road *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.streetRoad}</label>
                 <input
                   value={form.line1}
                   onChange={(e) => f('line1', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Street 123, Road 456"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Block</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.blockLabel}</label>
                 <input
                   value={form.block}
                   onChange={(e) => f('block', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Block 320"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Building</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.buildingLabel}</label>
                 <input
                   value={form.building}
                   onChange={(e) => f('building', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Building 12"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">Flat / Apartment</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.flatLabel}</label>
                 <input
                   value={form.flat}
                   onChange={(e) => f('flat', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Flat 5"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-700">City / Area</label>
+                <label className="mb-1 block text-xs font-medium text-gray-700">{t.cityAreaLabel}</label>
                 <input
                   value={form.city}
                   onChange={(e) => f('city', e.target.value)}
                   className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Manama"
                 />
               </div>
             </div>
             <div className="mt-4">
-              <label className="mb-1 block text-xs font-medium text-gray-700">Delivery Notes (optional)</label>
+              <label className="mb-1 block text-xs font-medium text-gray-700">{t.deliveryNotesLabel}</label>
               <textarea
                 value={form.notes}
                 onChange={(e) => f('notes', e.target.value)}
                 rows={2}
+                placeholder={t.deliveryNotesPlaceholder}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Any special delivery instructions…"
               />
             </div>
           </section>
@@ -203,14 +204,10 @@ export default function CheckoutPage() {
           {/* Payment */}
           <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 font-semibold text-gray-900">
-              <CreditCard className="h-4 w-4 text-blue-600" /> Payment Method
+              <CreditCard className="h-4 w-4 text-blue-600" /> {t.paymentMethodLabel}
             </h2>
             <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { value: 'cash_on_delivery', label: 'Cash on Delivery', icon: '💵' },
-                { value: 'bank_transfer', label: 'Bank Transfer', icon: '🏦' },
-                { value: 'card', label: 'Card (at door)', icon: '💳' },
-              ].map((opt) => (
+              {paymentOptions.map((opt) => (
                 <label
                   key={opt.value}
                   className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
@@ -235,9 +232,7 @@ export default function CheckoutPage() {
             {form.paymentMethod === 'bank_transfer' && (
               <div className="mt-3 flex items-start gap-2 rounded-lg bg-blue-50 px-3 py-2">
                 <Building2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                <p className="text-xs text-blue-700">
-                  Bank details will be sent to you after order confirmation. Please transfer before delivery.
-                </p>
+                <p className="text-xs text-blue-700">{t.bankTransferNote}</p>
               </div>
             )}
           </section>
@@ -246,7 +241,7 @@ export default function CheckoutPage() {
         {/* Right: Order Summary */}
         <div className="space-y-4">
           <div className="sticky top-24 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-semibold text-gray-900">Order Summary</h2>
+            <h2 className="mb-4 font-semibold text-gray-900">{t.orderSummary}</h2>
             <ul className="space-y-3">
               {items.map((item) => (
                 <li key={item.productId} className="flex items-center gap-3">
@@ -284,15 +279,15 @@ export default function CheckoutPage() {
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-500">
-                <span>Subtotal</span>
+                <span>{t.subtotal}</span>
                 <span>{subtotal.toFixed(3)} BHD</span>
               </div>
               <div className="flex justify-between text-gray-500">
-                <span>Shipping</span>
-                <span className="text-green-600 font-medium">Free</span>
+                <span>{t.shipping}</span>
+                <span className="text-green-600 font-medium">{t.shippingFree}</span>
               </div>
               <div className="flex justify-between border-t border-gray-100 pt-2 font-semibold text-gray-900">
-                <span>Total</span>
+                <span>{t.total}</span>
                 <span>{subtotal.toFixed(3)} BHD</span>
               </div>
             </div>
@@ -308,13 +303,11 @@ export default function CheckoutPage() {
               disabled={loading}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {loading ? 'Placing Order…' : (
-                <>Place Order <ChevronRight className="h-4 w-4" /></>
+              {loading ? t.placingOrder : (
+                <>{t.placeOrderBtn} <ChevronRight className="h-4 w-4" /></>
               )}
             </button>
-            <p className="mt-2 text-center text-xs text-gray-400">
-              By placing your order you agree to our terms of service.
-            </p>
+            <p className="mt-2 text-center text-xs text-gray-400">{t.termsAgreement}</p>
           </div>
         </div>
       </form>

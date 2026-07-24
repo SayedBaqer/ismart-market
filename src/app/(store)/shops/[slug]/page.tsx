@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { Package, Phone, Mail, MapPin, Newspaper, ChevronRight, Instagram, MessageCircle, Facebook, Music2 } from 'lucide-react'
 import { InstagramFeed } from '@/components/store/instagram-feed'
+import { getStoreT } from '@/lib/i18n/get-store-lang'
+import type { StoreTranslations } from '@/lib/i18n/store'
 
 export const revalidate = 60
 
@@ -17,7 +19,7 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function ShopPublicPage({ params }: Props) {
-  const { slug } = await params
+  const [{ slug }, t] = await Promise.all([params, getStoreT()])
 
   const shop = await prisma.shop.findUnique({
     where: { slug, status: 'ACTIVE' },
@@ -54,12 +56,11 @@ export default async function ShopPublicPage({ params }: Props) {
   const currency = shop.currency ?? 'BHD'
   const fmt = (n: number) => `${n.toFixed(3)} ${currency}`
 
-  // Products sorted by section type
-  const topSellers = [...shop.products].sort(() => Math.random() - 0.5).slice(0, 8) // in real app: order by sales qty
+  const topSellers = [...shop.products].sort(() => Math.random() - 0.5).slice(0, 8)
   const newArrivals = [...shop.products].slice(0, 8)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir={t.dir}>
       {/* Announcement bar */}
       {announcement && sections.some((s) => s.type === 'announcement-bar') && (
         <div className="bg-blue-700 text-white text-center py-2 text-sm font-medium px-4">
@@ -147,19 +148,19 @@ export default async function ShopPublicPage({ params }: Props) {
           switch (sec.type) {
             case 'top-sellers':
               return topSellers.length > 0 ? (
-                <ProductSection key="top-sellers" title={(sec.config?.title as string) || 'Top Sellers'} emoji="🏆" products={topSellers} fmt={fmt} shopSlug={slug} />
+                <ProductSection key="top-sellers" title={(sec.config?.title as string) || t.topSellers} emoji="🏆" products={topSellers} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
               ) : null
 
             case 'new-arrivals':
               return newArrivals.length > 0 ? (
-                <ProductSection key="new-arrivals" title={(sec.config?.title as string) || 'New Arrivals'} emoji="✨" products={newArrivals} fmt={fmt} shopSlug={slug} />
+                <ProductSection key="new-arrivals" title={(sec.config?.title as string) || t.newArrivals} emoji="✨" products={newArrivals} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
               ) : null
 
-            case 'categories':
+            case 'categories': {
               const cats = [...new Set(shop.products.map((p) => p.category?.name).filter(Boolean))]
               return cats.length > 1 ? (
                 <section key="categories">
-                  <SectionHeader title="Categories" emoji="🗂️" />
+                  <SectionHeader title={t.shopCategories} emoji="🗂️" />
                   <div className="flex flex-wrap gap-2 mt-3">
                     {cats.map((c) => (
                       <Link key={c} href={`/shops/${slug}?category=${encodeURIComponent(c!)}`}
@@ -170,11 +171,12 @@ export default async function ShopPublicPage({ params }: Props) {
                   </div>
                 </section>
               ) : null
+            }
 
             case 'about':
               return shop.description ? (
                 <section key="about" className="rounded-2xl border border-gray-200 bg-white p-6">
-                  <SectionHeader title="About" emoji="🏪" />
+                  <SectionHeader title={t.aboutShop} emoji="🏪" />
                   <p className="mt-3 text-sm text-gray-600 leading-relaxed">{shop.description}</p>
                 </section>
               ) : null
@@ -187,7 +189,7 @@ export default async function ShopPublicPage({ params }: Props) {
         {/* News section */}
         {shop.news.length > 0 && (
           <section>
-            <SectionHeader title="Latest News" emoji="📰" />
+            <SectionHeader title={t.latestNews} emoji="📰" />
             <div className="mt-4 space-y-3">
               {shop.news.map((post) => (
                 <div key={post.id} className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
@@ -198,7 +200,10 @@ export default async function ShopPublicPage({ params }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900">{post.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                        {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString(
+                          t.lang === 'ar' ? 'ar-BH' : 'en-GB',
+                          { day: 'numeric', month: 'long', year: 'numeric' }
+                        ) : ''}
                         {post.author.name ? ` · ${post.author.name}` : ''}
                       </p>
                       <p className="mt-2 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{post.body}</p>
@@ -212,10 +217,9 @@ export default async function ShopPublicPage({ params }: Props) {
 
         {/* All products fallback */}
         {sections.length === 0 && (
-          <ProductSection title="All Products" emoji="📦" products={shop.products} fmt={fmt} shopSlug={slug} />
+          <ProductSection title={t.allProducts} emoji="📦" products={shop.products} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
         )}
 
-        {/* Instagram plugin */}
         {igPosts.length > 0 && <InstagramFeed posts={igPosts} />}
       </div>
     </div>
@@ -240,20 +244,21 @@ function SectionHeader({ title, emoji }: { title: string; emoji: string }) {
 }
 
 function ProductSection({
-  title, emoji, products, fmt, shopSlug,
+  title, emoji, products, fmt, shopSlug, seeAllLabel,
 }: {
   title: string
   emoji: string
   products: { id: string; slug: string; name: string; price: unknown; images: unknown; category: { name: string } | null }[]
   fmt: (n: number) => string
   shopSlug: string
+  seeAllLabel: string
 }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
         <SectionHeader title={title} emoji={emoji} />
         <Link href={`/products?shop=${shopSlug}`} className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
-          See all <ChevronRight className="h-4 w-4" />
+          {seeAllLabel} <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

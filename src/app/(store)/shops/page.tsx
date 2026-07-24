@@ -2,35 +2,39 @@ import { prisma } from '@/lib/db'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Store, Package } from 'lucide-react'
+import { getStoreT } from '@/lib/i18n/get-store-lang'
 
 export const revalidate = 60
 
 export default async function ShopsPage() {
-  const shops = await prisma.shop.findMany({
-    where: { status: 'ACTIVE' },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      description: true,
-      logoUrl: true,
-      bannerUrl: true,
-      _count: { select: { products: { where: { isActive: true, isHidden: false } } } },
-    },
-  })
+  const [shops, t] = await Promise.all([
+    prisma.shop.findMany({
+      where: { status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logoUrl: true,
+        bannerUrl: true,
+        _count: { select: { products: { where: { isActive: true, isHidden: false } } } },
+      },
+    }),
+    getStoreT(),
+  ])
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6" dir={t.dir}>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Shops</h1>
-        <p className="text-sm text-gray-500 mt-1">{shops.length} active {shops.length === 1 ? 'shop' : 'shops'}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t.allShops}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t.activeShops(shops.length)}</p>
       </div>
 
       {shops.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Store className="h-12 w-12 text-gray-300 mb-3" />
-          <p className="text-gray-500">No shops yet</p>
+          <p className="text-gray-500">{t.noShops}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -40,7 +44,6 @@ export default async function ShopsPage() {
               href={`/shops/${shop.slug}`}
               className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white hover:border-blue-200 hover:shadow-md transition-all"
             >
-              {/* Banner */}
               <div className="relative h-24 bg-gradient-to-br from-blue-600 to-blue-800 overflow-hidden">
                 {shop.bannerUrl && (
                   <Image src={shop.bannerUrl} alt={shop.name} fill className="object-cover" />
@@ -48,7 +51,6 @@ export default async function ShopsPage() {
                 <div className="absolute inset-0 bg-black/20" />
               </div>
 
-              {/* Logo + info */}
               <div className="p-4 flex gap-3 items-start -mt-6">
                 <div className="h-12 w-12 rounded-xl border-2 border-white overflow-hidden relative shrink-0 shadow-md bg-white">
                   {shop.logoUrl ? (
@@ -66,7 +68,7 @@ export default async function ShopsPage() {
                   )}
                   <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
                     <Package className="h-3 w-3" />
-                    {shop._count.products} products
+                    {shop._count.products} {t.products}
                   </div>
                 </div>
               </div>
