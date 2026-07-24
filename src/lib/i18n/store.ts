@@ -4,14 +4,14 @@ export const storeT = {
   en: {
     dir: 'ltr' as const,
     lang: 'en',
-    // Header
+    // ── Header ───────────────────────────────────────────────────────────────
     welcome: 'Welcome to',
     searchPlaceholder: 'Search products, SKUs…',
     searchBtn: 'Search',
     allProducts: 'All Products',
     cart: 'Cart',
     switchLang: 'عربي',
-    // Footer
+    // ── Footer ───────────────────────────────────────────────────────────────
     tagline: 'Your trusted source for professional equipment and accessories. Quality products, reliable service.',
     categories: 'Categories',
     quickLinks: 'Quick Links',
@@ -20,10 +20,23 @@ export const storeT = {
     openShop: 'Open a Shop',
     adminPortal: 'Admin Portal',
     rights: 'All rights reserved.',
-    // Products page
+    // ── Home page ─────────────────────────────────────────────────────────────
+    heroSubtitle: 'Discover the best products from top shops in one place.',
+    shopNow: 'Shop Now',
+    seeAll: 'See All',
+    bestSellers: 'Best Sellers',
+    hotDeals: 'Hot Deals',
+    trendingNow: 'Trending Now',
+    topShops: 'Top Shops',
+    newArrivals: 'New Arrivals',
+    browseAll: 'Browse All Products',
+    products: 'products',
+    viewShop: 'View Shop',
+    allCategories: 'All',
+    // ── Products page ─────────────────────────────────────────────────────────
     filters: 'Filters',
     category: 'Category',
-    allCategories: 'All Categories',
+    allCategoriesLabel: 'All Categories',
     searchProductsPlaceholder: 'Search products…',
     results: (n: number, q?: string) =>
       `${n} product${n !== 1 ? 's' : ''}${q ? ` for "${q}"` : ''}`,
@@ -31,13 +44,18 @@ export const storeT = {
     clearFilters: 'Clear filters',
     prev: '← Prev',
     next: 'Next →',
-    // Product detail
+    // ── Product detail ────────────────────────────────────────────────────────
     addToCart: 'Add to Cart',
     outOfStock: 'Out of Stock',
+    inStock: 'In Stock',
     sku: 'SKU',
     specifications: 'Specifications',
     relatedProducts: 'Related Products',
-    // Cart
+    bundleIncludes: 'Bundle includes',
+    item: 'item',
+    items: 'items',
+    viewOnInstagram: 'View on Instagram',
+    // ── Cart ─────────────────────────────────────────────────────────────────
     yourCart: 'Your Cart',
     emptyCart: 'Your cart is empty',
     continueShopping: 'Continue Shopping',
@@ -45,7 +63,7 @@ export const storeT = {
     checkout: 'Proceed to Checkout',
     remove: 'Remove',
     qty: 'Qty',
-    // Checkout
+    // ── Checkout ─────────────────────────────────────────────────────────────
     orderSummary: 'Order Summary',
     shippingInfo: 'Shipping Information',
     fullName: 'Full Name',
@@ -54,21 +72,48 @@ export const storeT = {
     city: 'City',
     notes: 'Order Notes (optional)',
     placeOrder: 'Place Order',
-    // Misc
+    // ── Track ────────────────────────────────────────────────────────────────
+    trackTitle: 'Track Your Order',
+    trackSubtitle: 'Enter your order number to see the latest status',
+    trackPlaceholder: 'e.g. ORD-20240001',
+    trackBtn: 'Track',
+    trackNotFound: 'Order not found. Please check the order number and try again.',
+    myOrders: 'My Recent Orders',
+    trackAnother: 'Track another order',
+    orderPlaced: 'Order Placed',
+    confirmed: 'Confirmed',
+    ready: 'Ready to Pick Up',
+    outForDelivery: 'Out for Delivery',
+    delivered: 'Delivered',
+    cancelled: 'Cancelled',
+    inProgress: 'In progress',
+    orderItems: 'Order Items',
+    total: 'Total',
+    contactShop: 'Contact Shop',
+    deliveryAddress: 'Delivery Address',
+    backToStore: '← Back to store',
+    // ── Shops page ────────────────────────────────────────────────────────────
+    allShops: 'All Shops',
+    searchShops: 'Search shops…',
+    noShops: 'No shops found',
+    visitShop: 'Visit Shop',
+    // ── Misc ─────────────────────────────────────────────────────────────────
     loading: 'Loading…',
     error: 'Something went wrong',
+    save: 'Save',
+    cancel: 'Cancel',
   },
   ar: {
     dir: 'rtl' as const,
     lang: 'ar',
-    // Header
+    // ── Header ───────────────────────────────────────────────────────────────
     welcome: 'مرحباً بكم في',
     searchPlaceholder: 'ابحث عن منتجات، رموز...',
     searchBtn: 'بحث',
     allProducts: 'جميع المنتجات',
     cart: 'السلة',
     switchLang: 'English',
-    // Footer
+    // ── Footer ───────────────────────────────────────────────────────────────
     tagline: 'مصدرك الموثوق للمعدات والملحقات الاحترافية. منتجات عالية الجودة وخدمة موثوقة.',
     categories: 'التصنيفات',
     quickLinks: 'روابط سريعة',
@@ -77,10 +122,23 @@ export const storeT = {
     openShop: 'افتح متجرك',
     adminPortal: 'لوحة التحكم',
     rights: 'جميع الحقوق محفوظة.',
-    // Products page
+    // ── Home page ─────────────────────────────────────────────────────────────
+    heroSubtitle: 'اكتشف أفضل المنتجات من أفضل المتاجر في مكان واحد.',
+    shopNow: 'تسوق الآن',
+    seeAll: 'عرض الكل',
+    bestSellers: 'الأكثر مبيعاً',
+    hotDeals: 'أفضل العروض',
+    trendingNow: 'الأكثر رواجاً',
+    topShops: 'أبرز المتاجر',
+    newArrivals: 'وصل حديثاً',
+    browseAll: 'تصفح جميع المنتجات',
+    products: 'منتجات',
+    viewShop: 'زيارة المتجر',
+    allCategories: 'الكل',
+    // ── Products page ─────────────────────────────────────────────────────────
     filters: 'التصفية',
     category: 'التصنيف',
-    allCategories: 'جميع التصنيفات',
+    allCategoriesLabel: 'جميع التصنيفات',
     searchProductsPlaceholder: 'ابحث عن منتجات...',
     results: (n: number, q?: string) =>
       `${n} منتج${q ? ` لـ "${q}"` : ''}`,
@@ -88,13 +146,18 @@ export const storeT = {
     clearFilters: 'مسح الفلاتر',
     prev: 'السابق →',
     next: '← التالي',
-    // Product detail
+    // ── Product detail ────────────────────────────────────────────────────────
     addToCart: 'أضف إلى السلة',
     outOfStock: 'غير متوفر',
+    inStock: 'متوفر',
     sku: 'الرمز',
     specifications: 'المواصفات',
     relatedProducts: 'منتجات ذات صلة',
-    // Cart
+    bundleIncludes: 'الحزمة تشمل',
+    item: 'عنصر',
+    items: 'عناصر',
+    viewOnInstagram: 'شاهد على إنستغرام',
+    // ── Cart ─────────────────────────────────────────────────────────────────
     yourCart: 'سلة التسوق',
     emptyCart: 'سلتك فارغة',
     continueShopping: 'متابعة التسوق',
@@ -102,7 +165,7 @@ export const storeT = {
     checkout: 'متابعة للدفع',
     remove: 'حذف',
     qty: 'الكمية',
-    // Checkout
+    // ── Checkout ─────────────────────────────────────────────────────────────
     orderSummary: 'ملخص الطلب',
     shippingInfo: 'معلومات الشحن',
     fullName: 'الاسم الكامل',
@@ -111,9 +174,36 @@ export const storeT = {
     city: 'المدينة',
     notes: 'ملاحظات الطلب (اختياري)',
     placeOrder: 'إتمام الطلب',
-    // Misc
+    // ── Track ────────────────────────────────────────────────────────────────
+    trackTitle: 'تتبع طلبك',
+    trackSubtitle: 'أدخل رقم طلبك لمتابعة آخر تحديث',
+    trackPlaceholder: 'مثال: ORD-20240001',
+    trackBtn: 'تتبع',
+    trackNotFound: 'لم يتم العثور على الطلب. يرجى التحقق من الرقم والمحاولة مجدداً.',
+    myOrders: 'طلباتي الأخيرة',
+    trackAnother: 'تتبع طلب آخر',
+    orderPlaced: 'تم تقديم الطلب',
+    confirmed: 'تم التأكيد',
+    ready: 'جاهز للاستلام',
+    outForDelivery: 'في طريقه إليك',
+    delivered: 'تم التسليم',
+    cancelled: 'ملغى',
+    inProgress: 'قيد التنفيذ',
+    orderItems: 'عناصر الطلب',
+    total: 'الإجمالي',
+    contactShop: 'تواصل مع المتجر',
+    deliveryAddress: 'عنوان التوصيل',
+    backToStore: 'العودة للمتجر →',
+    // ── Shops page ────────────────────────────────────────────────────────────
+    allShops: 'جميع المتاجر',
+    searchShops: 'ابحث عن متاجر...',
+    noShops: 'لا توجد متاجر',
+    visitShop: 'زيارة المتجر',
+    // ── Misc ─────────────────────────────────────────────────────────────────
     loading: 'جاري التحميل...',
     error: 'حدث خطأ ما',
+    save: 'حفظ',
+    cancel: 'إلغاء',
   },
 } satisfies Record<StoreLang, object>
 

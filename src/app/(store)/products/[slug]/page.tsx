@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { getSetting } from '@/lib/services/settings.service'
 import { formatCurrency } from '@/lib/utils'
-import { ChevronRight, Package, Tag, Layers, Instagram } from 'lucide-react'
+import { ChevronRight, Package, Tag, Layers } from 'lucide-react'
 import type { Metadata } from 'next'
 import { AddToCartButton } from '@/components/store/add-to-cart-button'
 import { ProductViewTracker } from '@/components/store/product-view-tracker'
 import { getStoreT } from '@/lib/i18n/get-store-lang'
+import { t as tc } from '@/lib/i18n/translate-content'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -57,7 +58,10 @@ export default async function ProductPage({ params }: PageProps) {
 
   const images = (product.images as string[]) ?? []
   const curr = currency ?? 'BHD'
-  const instagramUrl = ((product.meta as Record<string, unknown>)?.instagramUrl as string) ?? ''
+  const lang = t.lang as 'en' | 'ar'
+  const displayName = tc(product.meta, 'name', product.name, lang)
+  const displayDesc = tc(product.meta, 'description', product.description ?? '', lang)
+  const displayCatName = product.category ? tc(product.category.meta, 'name', product.category.name, lang) : ''
   const inStock =
     !product.trackStock ||
     (product.stockMeta ? Number(product.stockMeta.currentQty) > 0 : true)
@@ -67,22 +71,19 @@ export default async function ProductPage({ params }: PageProps) {
       <ProductViewTracker slug={slug} />
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1 text-xs text-gray-500">
-        <Link href="/" className="hover:text-gray-900">{t.lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
+        <Link href="/" className="hover:text-gray-900">{lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href="/products" className="hover:text-gray-900">{t.allProducts}</Link>
         {product.category && (
           <>
             <ChevronRight className="h-3 w-3" />
-            <Link
-              href={`/products?category=${product.category.slug}`}
-              className="hover:text-gray-900"
-            >
-              {product.category.name}
+            <Link href={`/products?category=${product.category.slug}`} className="hover:text-gray-900">
+              {displayCatName}
             </Link>
           </>
         )}
         <ChevronRight className="h-3 w-3" />
-        <span className="text-gray-900 font-medium">{product.name}</span>
+        <span className="text-gray-900 font-medium">{displayName}</span>
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -126,11 +127,11 @@ export default async function ProductPage({ params }: PageProps) {
               className="inline-flex w-fit items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
             >
               <Tag className="h-3 w-3" />
-              {product.category.name}
+              {displayCatName}
             </Link>
           )}
 
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{product.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{displayName}</h1>
 
           {product.sku && (
             <p className="text-sm text-gray-400">{t.sku}: <span className="font-mono">{product.sku}</span></p>
@@ -142,7 +143,7 @@ export default async function ProductPage({ params }: PageProps) {
             </span>
             {inStock ? (
               <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                {t.lang === 'ar' ? 'متوفر' : 'In Stock'}
+                {t.inStock}
               </span>
             ) : (
               <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
@@ -151,20 +152,8 @@ export default async function ProductPage({ params }: PageProps) {
             )}
           </div>
 
-          {product.description && (
-            <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
-          )}
-
-          {instagramUrl && (
-            <a
-              href={instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5 text-xs font-medium text-pink-600 hover:bg-pink-100"
-            >
-              <Instagram className="h-3.5 w-3.5" />
-              {t.lang === 'ar' ? 'شاهد على إنستغرام' : 'View on Instagram'}
-            </a>
+          {displayDesc && (
+            <p className="text-sm text-gray-600 leading-relaxed">{displayDesc}</p>
           )}
 
           <div className="mt-2">

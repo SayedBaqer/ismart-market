@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Package, RefreshCw, Search, Save, Tag,
-  AlertTriangle, TrendingDown,
+  AlertTriangle, TrendingDown, Globe,
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface StockRow {
   id: string
@@ -201,6 +202,14 @@ export default function ShopStockPage() {
                         {row.avgCostBhd > 0 ? `${row.avgCostBhd.toFixed(3)} BHD` : '—'}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Translate link */}
+                  <div className="mb-3">
+                    <Link href={`/shop/stock/translate/${row.id}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                      <Globe className="h-3 w-3" /> Add Arabic translation
+                    </Link>
                   </div>
 
                   {/* Price inputs */}

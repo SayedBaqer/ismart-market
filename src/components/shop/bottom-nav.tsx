@@ -29,6 +29,7 @@ const MORE_ITEMS = (role: string) => [
   { href: '/shop/billing', label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/news', label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/plugins/instagram', label: 'Instagram', icon: Instagram, roles: ['MANAGER'] },
+  { href: '/shop/plugins/instagram-import', label: 'IG Import', icon: Instagram, roles: ['MANAGER'] },
   { href: '/shop/reports', label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
   { href: '/shop/users', label: 'Staff Users', icon: UserPlus, roles: ['MANAGER'] },
   { href: '/shop/settings', label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
