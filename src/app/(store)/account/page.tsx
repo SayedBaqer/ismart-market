@@ -281,13 +281,6 @@ function GuestView() {
         )}
       </div>
 
-      {/* Admin hint */}
-      <p className="mt-6 text-center text-xs text-gray-400">
-        Admin?{' '}
-        <Link href="/admin/login" className="text-blue-600 hover:underline">
-          Admin Portal →
-        </Link>
-      </p>
     </div>
   )
 }
