@@ -32,9 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const shopUser = await prisma.shopUser.findFirst({ where: { userId: session.user.id } })
-  if (!shopUser || !['MANAGER', 'STAFF'].includes(shopUser.role)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  if (!shopUser) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { id } = await params
   const order = await prisma.order.findUnique({ where: { id } })
@@ -43,28 +41,49 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const body = await req.json()
-  const { action, notes, cancelReason } = body
-
-  // Validate state transitions
+  const { action, notes, cancelReason, pickupAddress, deliveryAddress } = body
+  const role = shopUser.role
   const current = order.status
-  let nextStatus: string | null = null
+  const now = new Date()
 
-  if (action === 'confirm' && current === 'PENDING') nextStatus = 'PROCESSING'
-  else if (action === 'ship' && current === 'PROCESSING') nextStatus = 'SHIPPED'
-  else if (action === 'complete' && current === 'SHIPPED') nextStatus = 'COMPLETED'
-  else if (action === 'cancel' && ['PENDING', 'PROCESSING'].includes(current)) nextStatus = 'CANCELLED'
-  else {
-    return NextResponse.json({ error: `Cannot perform "${action}" on a ${current} order` }, { status: 400 })
+  // ── State machine ──────────────────────────────────────────────────────────
+  // PENDING → CONFIRMED (MANAGER or STAFF)
+  // CONFIRMED → PREPARED (MANAGER or STAFF)
+  // PREPARED → IN_DELIVERY (MANAGER or STAFF — transfer to delivery)
+  // IN_DELIVERY → COMPLETED (CASHIER / delivery staff)
+  // Any non-completed → CANCELLED (MANAGER only)
+
+  let update: Record<string, unknown> = {}
+
+  if (action === 'confirm' && current === 'PENDING' && ['MANAGER', 'STAFF'].includes(role)) {
+    update = { status: 'CONFIRMED', confirmedAt: now }
+  } else if (action === 'prepare' && current === 'CONFIRMED' && ['MANAGER', 'STAFF'].includes(role)) {
+    update = { status: 'PREPARED', preparedAt: now }
+  } else if (action === 'transfer_delivery' && current === 'PREPARED' && ['MANAGER', 'STAFF'].includes(role)) {
+    update = {
+      status: 'IN_DELIVERY',
+      transferredAt: now,
+      deliveryStatus: 'ASSIGNED',
+      pickupAddress: pickupAddress ?? order.pickupAddress,
+      deliveryAddress: deliveryAddress ?? order.deliveryAddress,
+    }
+  } else if (action === 'deliver' && current === 'IN_DELIVERY' && ['MANAGER', 'STAFF', 'CASHIER'].includes(role)) {
+    update = { status: 'COMPLETED', deliveredAt: now, deliveryStatus: 'DELIVERED' }
+  } else if (action === 'complete' && ['SHIPPED', 'PROCESSING'].includes(current) && ['MANAGER', 'STAFF'].includes(role)) {
+    // Legacy path
+    update = { status: 'COMPLETED', deliveredAt: now }
+  } else if (action === 'cancel' && !['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(current) && role === 'MANAGER') {
+    update = {
+      status: 'CANCELLED',
+      deliveryStatus: 'NOT_ASSIGNED',
+      notes: cancelReason ? `Cancelled: ${cancelReason}` : order.notes,
+    }
+  } else {
+    return NextResponse.json({ error: `Cannot perform "${action}" on a ${current} order with role ${role}` }, { status: 400 })
   }
 
-  const updated = await prisma.order.update({
-    where: { id },
-    data: {
-      status: nextStatus as never,
-      notes: cancelReason ? `Cancelled: ${cancelReason}` : notes ?? order.notes,
-      ...(nextStatus === 'CANCELLED' ? { deliveryStatus: 'NOT_ASSIGNED' } : {}),
-    },
-  })
+  if (notes) update.notes = notes
 
+  const updated = await prisma.order.update({ where: { id }, data: update as never })
   return NextResponse.json({ order: updated })
 }

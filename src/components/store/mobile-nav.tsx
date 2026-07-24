@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, ShoppingBag, Store, User } from 'lucide-react'
+import { Home, Search, ShoppingBag, Store, User, MapPin } from 'lucide-react'
 import { useCartStore } from '@/lib/store/cart'
 
 export function MobileNav() {
@@ -14,6 +14,7 @@ export function MobileNav() {
     { href: '/', icon: Home, label: 'Home' },
     { href: '/products', icon: Search, label: 'Browse' },
     { href: '/shops', icon: Store, label: 'Shops' },
+    { href: '/track', icon: MapPin, label: 'Track' },
   ]
 
   return (

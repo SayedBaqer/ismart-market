@@ -10,6 +10,8 @@ import { BestSellersSection } from '@/components/store/sections/best-sellers'
 import { NewArrivalsSection } from '@/components/store/sections/new-arrivals'
 import { FlashSaleSection } from '@/components/store/sections/flash-sale'
 import { CustomBanner } from '@/components/store/sections/custom-banner'
+import { AdCarousel } from '@/components/store/sections/ad-carousel'
+import { RankingsSection } from '@/components/store/sections/rankings'
 import { prisma } from '@/lib/db'
 import { getSetting } from '@/lib/services/settings.service'
 
@@ -18,6 +20,23 @@ export const revalidate = 60
 export default async function HomePage() {
   const sections = await getHomeSections()
   const enabled = sections.filter((s) => s.enabled).sort((a, b) => a.order - b.order)
+
+  // Active advertisements
+  const now = new Date()
+  const ads = await prisma.advertisement.findMany({
+    where: { isActive: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+    orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+    take: 8,
+    select: { id: true, title: true, subtitle: true, imageUrl: true, ctaText: true, ctaUrl: true, bgColor: true, textColor: true },
+  }).catch(() => [])
+
+  // Rankings data
+  const [topViewed, topSellers, onSale, topShops] = await Promise.all([
+    prisma.product.findMany({ where: { isActive: true, isHidden: false }, orderBy: { views: 'desc' }, take: 8, select: { id: true, slug: true, name: true, price: true, comparePrice: true, images: true, category: { select: { name: true } } } }).catch(() => []),
+    prisma.product.findMany({ where: { isActive: true, isHidden: false }, orderBy: { salesCount: 'desc' }, take: 8, select: { id: true, slug: true, name: true, price: true, comparePrice: true, images: true, category: { select: { name: true } } } }).catch(() => []),
+    prisma.product.findMany({ where: { isActive: true, isHidden: false, comparePrice: { not: null } }, orderBy: { comparePrice: 'desc' }, take: 8, select: { id: true, slug: true, name: true, price: true, comparePrice: true, images: true, category: { select: { name: true } } } }).catch(() => []),
+    prisma.shop.findMany({ where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' }, take: 6, select: { id: true, name: true, slug: true, logoUrl: true, bannerUrl: true, description: true, _count: { select: { products: { where: { isActive: true } } } } } }).catch(() => []),
+  ])
 
   // Pre-fetch flash-sale products if that section is enabled
   const flashSection = enabled.find((s) => s.type === 'flash-sale')
@@ -63,8 +82,13 @@ export default async function HomePage() {
       })
   }
 
+  const currency = (await getSetting('currency.base')) ?? 'BHD'
+
   return (
     <>
+      {/* Ad carousel — always first if ads exist */}
+      {ads.length > 0 && <AdCarousel ads={ads} />}
+
       {enabled.map((section) => {
         switch (section.type) {
           case 'announcement-bar':
@@ -93,6 +117,15 @@ export default async function HomePage() {
             return null
         }
       })}
+
+      {/* Rankings */}
+      <RankingsSection
+        topViewed={topViewed}
+        topSellers={topSellers}
+        onSale={onSale}
+        topShops={topShops}
+        currency={currency}
+      />
     </>
   )
 }

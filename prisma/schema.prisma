@@ -230,6 +230,8 @@ model Product {
   isHidden     Boolean          @default(false)     // hidden from store but usable in invoices
   trackStock   Boolean          @default(true)
   weight       Decimal?         @db.Decimal(10, 3)
+  views        Int              @default(0)
+  salesCount   Int              @default(0)
   meta         Json             @default("{}")      // extensible by plugins
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
@@ -428,6 +430,11 @@ model Order {
   deliveryNotes     String?
   estimatedDelivery DateTime?
   deliveredAt       DateTime?
+  pickupAddress     String?         // collection point shown to delivery staff
+  deliveryAddress   String?         // customer delivery location
+  confirmedAt       DateTime?
+  preparedAt        DateTime?
+  transferredAt     DateTime?       // when sales transferred to delivery
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -465,6 +472,9 @@ model OrderItem {
 
 enum OrderStatus {
   PENDING
+  CONFIRMED
+  PREPARED
+  IN_DELIVERY
   PROCESSING
   SHIPPED
   COMPLETED
@@ -632,6 +642,41 @@ model Setting {
   updatedAt DateTime @updatedAt
 
   @@map("settings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADVERTISEMENTS (rotating banners / promotions on home page)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Advertisement {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  imageUrl    String?
+  ctaText     String   @default("Shop Now")
+  ctaUrl      String   @default("/")
+  type        AdType   @default(BANNER)
+  shopId      String?                          // target a specific shop
+  productSlug String?                          // target a specific product
+  bgColor     String   @default("#1d4ed8")     // fallback background
+  textColor   String   @default("#ffffff")
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)             // higher = shown first
+  startsAt    DateTime @default(now())
+  endsAt      DateTime?                        // null = runs forever
+  views       Int      @default(0)
+  clicks      Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("advertisements")
+}
+
+enum AdType {
+  BANNER      // full-width hero banner
+  SHOP        // promotes a specific shop
+  PRODUCT     // promotes a specific product / sale
+  NEWS        // links to a news/announcement
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
