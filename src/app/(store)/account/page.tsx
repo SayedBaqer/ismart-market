@@ -8,6 +8,7 @@ import {
   Loader2, ChevronRight, Package, CheckCircle2, Clock,
   XCircle, Truck,
 } from 'lucide-react'
+
 import Link from 'next/link'
 import { useStoreT } from '@/lib/i18n/store-context'
 
@@ -279,6 +280,27 @@ function GuestView() {
             </p>
           </>
         )}
+      </div>
+
+      {/* Open a shop CTA */}
+      <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-200">
+          <Store className="h-6 w-6 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-gray-900">
+            {t.lang === 'ar' ? 'هل تريد فتح متجرك؟' : 'Want to open your shop?'}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t.lang === 'ar' ? 'ابدأ مجاناً — 1 مبيعات + 1 توصيل مجاناً' : 'Start free — 1 sales + 1 delivery included'}
+          </p>
+        </div>
+        <Link
+          href="/shop/wizard"
+          className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
+        >
+          {t.lang === 'ar' ? 'ابدأ الآن' : 'Start Now'}
+        </Link>
       </div>
 
     </div>
