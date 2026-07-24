@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { getSetting } from '@/lib/services/settings.service'
 import { PwaRegister } from '@/components/pwa-register'
+import { StoreSessionProvider } from '@/components/store/session-provider'
 
 // Prevent static generation — this layout reads DB settings at request time
 export const dynamic = 'force-dynamic'
@@ -41,8 +42,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <body>
-        <PwaRegister />
-        {children}
+        <StoreSessionProvider>
+          <PwaRegister />
+          {children}
+        </StoreSessionProvider>
       </body>
     </html>
   )

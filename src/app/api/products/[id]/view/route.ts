@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-export async function POST(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+// The URL segment is a product slug, but lives under [id] to avoid
+// a Next.js dynamic-param naming conflict with the [id] CRUD route.
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: slug } = await params
   try {
     await prisma.product.update({
       where: { slug, isActive: true },
