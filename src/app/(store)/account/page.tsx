@@ -323,7 +323,7 @@ function GuestView() {
           </div>
 
           <Link
-            href="/account?tab=register&next=/shop/wizard"
+            href="/account?tab=register&next=/open-shop"
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-2.5 text-sm font-bold text-blue-700 hover:bg-blue-50 transition-colors shadow-sm"
           >
             <Store className="h-4 w-4" />

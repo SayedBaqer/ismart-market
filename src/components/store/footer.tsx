@@ -90,7 +90,7 @@ export async function StoreFooter() {
               {[
                 { href: '/products', label: t.allProductsLink },
                 { href: '/order-confirmation', label: t.trackOrder },
-                { href: '/shop/wizard', label: t.openShop },
+                { href: '/open-shop', label: t.openShop },
               ].map(({ href, label }) => (
                 <li key={href}>
                   <Link href={href} className="text-sm text-slate-400 hover:text-white transition-colors">
