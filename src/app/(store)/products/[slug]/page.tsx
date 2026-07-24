@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/utils'
 import { ChevronRight, Package, Tag, Layers, Instagram } from 'lucide-react'
 import type { Metadata } from 'next'
 import { AddToCartButton } from '@/components/store/add-to-cart-button'
+import { ProductViewTracker } from '@/components/store/product-view-tracker'
 import { getStoreT } from '@/lib/i18n/get-store-lang'
 
 interface PageProps {
@@ -52,6 +53,8 @@ export default async function ProductPage({ params }: PageProps) {
 
   if (!product) notFound()
 
+  // Increment view count (once per session, client-side)
+
   const images = (product.images as string[]) ?? []
   const curr = currency ?? 'BHD'
   const instagramUrl = ((product.meta as Record<string, unknown>)?.instagramUrl as string) ?? ''
@@ -61,6 +64,7 @@ export default async function ProductPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" dir={t.dir}>
+      <ProductViewTracker slug={slug} />
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1 text-xs text-gray-500">
         <Link href="/" className="hover:text-gray-900">{t.lang === 'ar' ? 'الرئيسية' : 'Home'}</Link>
