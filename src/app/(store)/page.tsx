@@ -325,7 +325,7 @@ export default async function HomePage() {
                     </div>
                   ))}
                 </div>
-                <Link href={`/account?tab=register&next=${encodeURIComponent(ad.ctaUrl)}`}
+                <Link href="/open-shop"
                   className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3 text-sm font-bold shadow-lg hover:opacity-90 transition-opacity"
                   style={{ color: ad.bgColor }}>
                   {ad.ctaText} <ArrowRight className="h-4 w-4" />
@@ -367,10 +367,10 @@ export default async function HomePage() {
                 ))}
               </div>
 
-              <Link href="/account?tab=register&next=%2Fopen-shop"
+              <Link href="/open-shop"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-3 text-sm font-bold text-blue-700 shadow-xl hover:bg-blue-50 transition-colors">
                 <Store className="h-4 w-4" />
-                {lang === 'ar' ? 'أنشئ حسابك — مجاناً' : 'Create your account — free'} <ArrowRight className="h-4 w-4" />
+                {lang === 'ar' ? 'افتح متجرك — مجاناً' : 'Open your shop — free'} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </section>
