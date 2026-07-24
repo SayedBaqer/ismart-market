@@ -6,20 +6,21 @@ import { LangProvider } from '@/components/store/lang-provider'
 import { MobileNav } from '@/components/store/mobile-nav'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
 import { getSetting } from '@/lib/services/settings.service'
-import { getStoreLang, getStoreT } from '@/lib/i18n/get-store-lang'
+import { getStoreLang } from '@/lib/i18n/get-store-lang'
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [termsRequired, termsContent, termsVersion, storeName, lang, t] = await Promise.all([
+  const [termsRequired, termsContent, termsVersion, storeName, lang] = await Promise.all([
     getSetting('legal.terms.required'),
     getSetting('legal.terms.content'),
     getSetting('legal.terms.version'),
     getSetting('company.name'),
     getStoreLang(),
-    getStoreT(),
   ])
 
   return (
-    <LangProvider lang={lang} t={t}>
+    // Pass only `lang` (a plain string) — LangProvider resolves translations client-side
+    // to avoid Next.js serialization errors with function-valued translation entries.
+    <LangProvider lang={lang}>
       <div className="flex min-h-screen flex-col">
         <StoreHeader />
         <main className="flex-1 pb-14 sm:pb-0">{children}</main>
