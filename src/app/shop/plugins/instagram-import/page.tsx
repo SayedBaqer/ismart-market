@@ -1,12 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Instagram, Plus, Trash2, ArrowRight, ArrowLeft, Package, CheckCircle2, Loader2, Info, ExternalLink } from 'lucide-react'
+import { Instagram, Plus, Trash2, ArrowRight, ArrowLeft, Package, CheckCircle2, Loader2, Info, ExternalLink, Check, ImageOff } from 'lucide-react'
 import Link from 'next/link'
-
-function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80)
-}
 
 function isValidIgUrl(url: string) {
   return /https?:\/\/(www\.)?instagram\.com\/(p|reel|tv)\/[\w-]+/.test(url)
@@ -19,14 +15,22 @@ interface PostEntry {
   price: string
   comparePrice: string
   sku: string
+  selected: boolean
+  thumbnailUrl: string | null
+  fetchError: string | null
+  fetched: boolean
 }
 
 interface ImportResult { name: string; ok: boolean; error?: string }
 
-const EMPTY: PostEntry = { url: '', name: '', description: '', price: '', comparePrice: '', sku: '' }
+const EMPTY: PostEntry = {
+  url: '', name: '', description: '', price: '', comparePrice: '', sku: '',
+  selected: true, thumbnailUrl: null, fetchError: null, fetched: false,
+}
 
 const STEPS = [
   { label: 'Add Posts', desc: 'Paste Instagram post URLs' },
+  { label: 'Select', desc: 'Choose which posts become products' },
   { label: 'Fill Details', desc: 'Name, price & description' },
   { label: 'Import', desc: 'Create products' },
 ]
@@ -35,6 +39,8 @@ export default function InstagramImportPage() {
   const [step, setStep] = useState(0)
   const [posts, setPosts] = useState<PostEntry[]>([{ ...EMPTY }])
   const [importing, setImporting] = useState(false)
+  const [fetchingPreviews, setFetchingPreviews] = useState(false)
+  const [oembedConfigured, setOembedConfigured] = useState(true)
   const [results, setResults] = useState<ImportResult[]>([])
   const [urlErrors, setUrlErrors] = useState<Record<number, string>>({})
 
@@ -42,9 +48,9 @@ export default function InstagramImportPage() {
   function removePost(i: number) { setPosts(p => p.filter((_, idx) => idx !== i)) }
   function update(i: number, field: keyof PostEntry, value: string) {
     setPosts(p => p.map((e, idx) => idx === i ? { ...e, [field]: value } : e))
-    if (field === 'name' && !posts[i].sku) {
-      setPosts(p => p.map((e, idx) => idx === i ? { ...e, name: value, sku: `IG-${slugify(value).slice(0, 20).toUpperCase()}-${Date.now().toString(36).slice(-4).toUpperCase()}` } : e))
-    }
+  }
+  function toggleSelected(i: number) {
+    setPosts(p => p.map((e, idx) => idx === i ? { ...e, selected: !e.selected } : e))
   }
 
   function validateUrls() {
@@ -57,21 +63,60 @@ export default function InstagramImportPage() {
     return Object.keys(errs).length === 0
   }
 
-  function nextFromUrls() {
+  async function nextFromUrls() {
     if (!validateUrls()) return
-    // Pre-fill SKUs where missing
-    setPosts(p => p.map((e, i) => ({
+    setStep(1)
+    setFetchingPreviews(true)
+
+    let anyConfigured = false
+    const fetched = await Promise.all(posts.map(async (post) => {
+      try {
+        const res = await fetch('/api/shop/plugins/instagram/oembed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: post.url }),
+        })
+        const d = await res.json() as {
+          configured: boolean; thumbnailUrl?: string; authorName?: string; caption?: string; error?: string
+        }
+        if (!d.configured) return { ...post, fetched: true, fetchError: null }
+        anyConfigured = true
+        if (d.error) return { ...post, fetched: true, fetchError: d.error }
+        const caption = d.caption ?? ''
+        return {
+          ...post,
+          fetched: true,
+          fetchError: null,
+          thumbnailUrl: d.thumbnailUrl ?? null,
+          name: post.name || caption.split('\n')[0].slice(0, 80) || d.authorName || '',
+          description: post.description || caption,
+        }
+      } catch {
+        return { ...post, fetched: true, fetchError: 'Preview unavailable' }
+      }
+    }))
+
+    setOembedConfigured(anyConfigured)
+    setPosts(fetched)
+    setFetchingPreviews(false)
+  }
+
+  function nextFromSelect() {
+    const selected = posts.filter((p) => p.selected)
+    if (selected.length === 0) return
+    setPosts((p) => p.map((e, i) => ({
       ...e,
       sku: e.sku || `IG-${String(i + 1).padStart(3, '0')}-${Date.now().toString(36).slice(-4).toUpperCase()}`,
     })))
-    setStep(1)
+    setStep(2)
   }
 
   async function doImport() {
     setImporting(true)
     const res: ImportResult[] = []
+    const selectedPosts = posts.filter((p) => p.selected)
 
-    for (const post of posts) {
+    for (const post of selectedPosts) {
       try {
         const r = await fetch('/api/shop/products/import-instagram', {
           method: 'POST',
@@ -83,6 +128,7 @@ export default function InstagramImportPage() {
             price: parseFloat(post.price) || 0,
             comparePrice: post.comparePrice ? parseFloat(post.comparePrice) : null,
             sku: post.sku,
+            imageUrl: post.thumbnailUrl || undefined,
           }),
         })
         const d = await r.json()
@@ -94,10 +140,12 @@ export default function InstagramImportPage() {
 
     setResults(res)
     setImporting(false)
-    setStep(2)
+    setStep(3)
   }
 
   const successCount = results.filter(r => r.ok).length
+  const selectedCount = posts.filter((p) => p.selected).length
+  const selectedPosts = posts.filter((p) => p.selected)
 
   return (
     <div className="mx-auto max-w-2xl p-4 sm:p-6 space-y-6">
@@ -139,7 +187,7 @@ export default function InstagramImportPage() {
             <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
             <div className="text-xs text-blue-700 space-y-1">
               <p className="font-semibold">How this works</p>
-              <p>Paste public Instagram post URLs. You&apos;ll fill in product details on the next step. Products are created in your shop — make sure images are set after import.</p>
+              <p>Paste public Instagram post URLs. On the next step you&apos;ll see a preview of each post and can pick exactly which ones become products.</p>
             </div>
           </div>
 
@@ -183,21 +231,93 @@ export default function InstagramImportPage() {
             </button>
             <button type="button" onClick={nextFromUrls}
               className="ml-auto flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors">
-              Next: Fill Details <ArrowRight className="h-4 w-4" />
+              Next: Preview & Select <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 1: Details ── */}
+      {/* ── Step 1: Preview & Select ── */}
       {step === 1 && (
         <div className="space-y-4">
-          {posts.map((post, i) => (
+          {fetchingPreviews ? (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+              <Loader2 className="h-8 w-8 animate-spin mb-3" />
+              <p className="text-sm">Fetching post previews…</p>
+            </div>
+          ) : (
+            <>
+              {!oembedConfigured && (
+                <div className="flex gap-3 rounded-xl bg-amber-50 border border-amber-100 p-4">
+                  <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700">
+                    Post previews aren&apos;t available (Instagram preview isn&apos;t configured for this site), but you can still select which posts to import — you&apos;ll add images manually after.
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-gray-500">{selectedCount} of {posts.length} selected</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {posts.map((post, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => toggleSelected(i)}
+                    className={`relative overflow-hidden rounded-2xl border-2 text-left transition-all ${
+                      post.selected ? 'border-blue-500 shadow-md' : 'border-gray-200 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                      {post.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageOff className="h-8 w-8 text-gray-300" />
+                      )}
+                    </div>
+                    <div className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white shadow ${
+                      post.selected ? 'bg-blue-600' : 'bg-white/70'
+                    }`}>
+                      {post.selected && <Check className="h-3.5 w-3.5 text-white" />}
+                    </div>
+                    <div className="p-2 bg-white">
+                      <p className="text-xs text-gray-600 truncate">{post.name || post.url}</p>
+                      {post.fetchError && <p className="text-[10px] text-red-500 truncate">{post.fetchError}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setStep(0)}
+                  className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
+                  <ArrowLeft className="h-4 w-4" /> Back
+                </button>
+                <button type="button" onClick={nextFromSelect} disabled={selectedCount === 0}
+                  className="ml-auto flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  Next: Fill Details ({selectedCount}) <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 2: Details ── */}
+      {step === 2 && (
+        <div className="space-y-4">
+          {selectedPosts.map((post) => {
+            const i = posts.indexOf(post)
+            return (
             <div key={i} className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0">
-                  <Instagram className="h-3.5 w-3.5 text-white" />
-                </div>
+                {post.thumbnailUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={post.thumbnailUrl} alt="" className="h-6 w-6 rounded object-cover shrink-0" />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0">
+                    <Instagram className="h-3.5 w-3.5 text-white" />
+                  </div>
+                )}
                 <a href={post.url} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-blue-600 hover:underline truncate flex-1 min-w-0">
                   {post.url}
@@ -235,23 +355,24 @@ export default function InstagramImportPage() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
 
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setStep(0)}
+            <button type="button" onClick={() => setStep(1)}
               className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
               <ArrowLeft className="h-4 w-4" /> Back
             </button>
             <button type="button" onClick={doImport} disabled={importing}
               className="ml-auto flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors">
-              {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : <><Package className="h-4 w-4" /> Import {posts.length} Product{posts.length !== 1 ? 's' : ''}</>}
+              {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : <><Package className="h-4 w-4" /> Import {selectedPosts.length} Product{selectedPosts.length !== 1 ? 's' : ''}</>}
             </button>
           </div>
         </div>
       )}
 
-      {/* ── Step 2: Results ── */}
-      {step === 2 && (
+      {/* ── Step 3: Results ── */}
+      {step === 3 && (
         <div className="space-y-4">
           <div className={`rounded-2xl p-5 text-center ${successCount === results.length ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'}`}>
             <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full ${successCount === results.length ? 'bg-green-100' : 'bg-orange-100'}`}>

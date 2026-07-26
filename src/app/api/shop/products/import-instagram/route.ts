@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
+import { rehostImageFromUrl } from '@/lib/upload'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -15,9 +16,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { instagramUrl, name, description, price, comparePrice, sku } = body as {
+  const { instagramUrl, name, description, price, comparePrice, sku, imageUrl } = body as {
     instagramUrl: string; name: string; description?: string
-    price: number; comparePrice?: number | null; sku: string
+    price: number; comparePrice?: number | null; sku: string; imageUrl?: string
   }
 
   if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -27,6 +28,18 @@ export async function POST(req: NextRequest) {
   const existing = await prisma.product.findUnique({ where: { sku }, select: { id: true } })
   if (existing) {
     return NextResponse.json({ error: `SKU "${sku}" already exists` }, { status: 409 })
+  }
+
+  // Re-host the selected post's image on our own storage — the Instagram CDN URL
+  // from oEmbed is signed/expiring and shouldn't be relied on long-term.
+  let images: string[] = []
+  if (imageUrl) {
+    try {
+      images = [await rehostImageFromUrl(imageUrl)]
+    } catch (err) {
+      console.error('[import-instagram] image rehost failed', err)
+      // Non-fatal — product is still created, owner can add images manually
+    }
   }
 
   const slug = `${sku.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`
@@ -40,6 +53,7 @@ export async function POST(req: NextRequest) {
       description: description?.trim() || null,
       price,
       comparePrice: comparePrice ?? null,
+      images,
       isActive: false, // draft — shop owner reviews before publishing
       trackStock: false,
       meta: instagramUrl ? { instagramUrl } : {},
