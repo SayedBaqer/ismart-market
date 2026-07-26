@@ -33,6 +33,9 @@ model Shop {
   status      ShopStatus @default(PENDING)  // pending approval → active → suspended
   plan        ShopPlan   @default(FREE)
   planExpiry  DateTime?
+  paymentStatus  ShopPaymentStatus @default(PAID) // subscription billing status — SUSPENDED blocks new orders
+  paymentDueDate DateTime?
+  paymentNote    String?
   settings    Json       @default("{}")
   meta        Json       @default("{}")
   createdAt   DateTime   @default(now())
@@ -124,6 +127,13 @@ enum ShopPlan {
   STARTER     // paid tier 1
   BUSINESS    // paid tier 2 (delivery integration, analytics)
   ENTERPRISE  // custom
+}
+
+enum ShopPaymentStatus {
+  PAID       // subscription current — full access
+  UNPAID     // payment overdue but within grace — shop can still operate
+  GRACE      // admin-extended allowance past the due date
+  SUSPENDED  // non-payment — new orders are blocked platform-side
 }
 
 // Junction: which users belong to which shop, with what role

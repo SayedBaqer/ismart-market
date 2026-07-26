@@ -11,7 +11,7 @@ import {
   LayoutDashboard, Package, Tag, BarChart3,
   Users, ShoppingCart, Newspaper, Settings, Plug,
   TrendingUp, Receipt, Warehouse, Building2, LayoutList, ClipboardCheck, Globe,
-  PanelLeftClose, PanelLeftOpen, Megaphone, Percent,
+  PanelLeftClose, PanelLeftOpen, Megaphone, Percent, Crown,
 } from 'lucide-react'
 
 interface NavItem {
@@ -76,6 +76,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/platform', icon: Globe, label: 'Platform Control', cap: 'settings.edit' },
       { href: '/admin/shops', icon: Building2, label: 'Shops', cap: 'settings.view' },
+      { href: '/admin/plans', icon: Crown, label: 'Subscription Plans', cap: 'settings.edit' },
       { href: '/admin/shops/approvals', icon: ClipboardCheck, label: 'Shop Approvals', cap: 'settings.edit', badgeKey: 'approvals' },
       { href: '/admin/commission', icon: Percent, label: 'Commission & Fees', cap: 'settings.edit' },
       { href: '/admin/commission/ledger', icon: Receipt, label: 'Commission Ledger', cap: 'settings.edit' },

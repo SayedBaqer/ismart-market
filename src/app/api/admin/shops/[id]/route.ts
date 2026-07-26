@@ -13,6 +13,9 @@ const updateSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().max(30).optional(),
   address: z.string().max(300).optional(),
+  paymentStatus: z.enum(['PAID', 'UNPAID', 'GRACE', 'SUSPENDED']).optional(),
+  paymentDueDate: z.string().optional().nullable(),
+  paymentNote: z.string().max(500).optional(),
 })
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -52,9 +55,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const { paymentDueDate, ...rest } = parsed.data
+
   const shop = await prisma.shop.update({
     where: { id },
-    data: parsed.data,
+    data: {
+      ...rest,
+      ...(paymentDueDate !== undefined && { paymentDueDate: paymentDueDate ? new Date(paymentDueDate) : null }),
+    },
   })
 
   return NextResponse.json(shop)

@@ -25,6 +25,7 @@ const ROUTE_CAPS: Array<{ prefix: string; cap: Parameters<typeof hasCapability>[
   { prefix: '/admin/home-layout', cap: 'settings.edit' },
   { prefix: '/admin/shop-approvals', cap: 'settings.edit' },
   { prefix: '/admin/shops', cap: 'settings.view' },
+  { prefix: '/admin/plans', cap: 'settings.edit' },
 ]
 
 type AuthSession = {

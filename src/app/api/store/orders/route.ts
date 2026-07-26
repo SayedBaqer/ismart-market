@@ -114,9 +114,17 @@ export async function POST(req: NextRequest) {
 
   for (const shopId of groups.keys()) {
     if (!shopId) continue
-    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { name: true, plan: true, settings: true } })
+    const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { name: true, plan: true, settings: true, paymentStatus: true } })
     if (!shop) continue
-    const limits = getEffectiveFeatureLimits(shop.plan, shop.settings)
+
+    if (shop.paymentStatus === 'SUSPENDED') {
+      return NextResponse.json({
+        error: `"${shop.name}" is temporarily unable to accept orders. Please contact support.`,
+        code: 'SHOP_SUSPENDED',
+      }, { status: 403 })
+    }
+
+    const limits = await getEffectiveFeatureLimits(shop.plan, shop.settings)
     const [ordersToday, ordersThisMonth] = await Promise.all([
       prisma.order.count({ where: { shopId, createdAt: { gte: startOfDay } } }),
       prisma.order.count({ where: { shopId, createdAt: { gte: startOfMonth } } }),

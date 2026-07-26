@@ -22,7 +22,7 @@ export async function GET() {
     orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }],
   })
 
-  const limits = getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
+  const limits = await getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
 
   return NextResponse.json({ branches, limit: limits.branches, used: branches.length })
 }
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const { name, address, phone } = body as { name: string; address?: string; phone?: string }
   if (!name?.trim()) return NextResponse.json({ error: 'Branch name is required' }, { status: 400 })
 
-  const limits = getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
+  const limits = await getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
   const count = await prisma.shopBranch.count({ where: { shopId: shopUser.shopId } })
   if (count >= limits.branches) {
     return NextResponse.json({

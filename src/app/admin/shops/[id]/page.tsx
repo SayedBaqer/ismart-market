@@ -8,7 +8,7 @@ import {
   Package, ShoppingCart, Users, TrendingUp, Crown, Zap, Shield,
   Calendar, Phone, Mail, MapPin, Edit3, Save, Globe, AlertTriangle,
   ChevronRight, BarChart2, Activity, BadgeCheck, Sliders,
-  UserCog, KeyRound, Trash2, Ban, Power, UserPlus, X,
+  UserCog, KeyRound, Trash2, Ban, Power, UserPlus, X, CreditCard, AlertOctagon,
 } from 'lucide-react'
 
 type ShopPlan = 'FREE' | 'STARTER' | 'BUSINESS' | 'ENTERPRISE'
@@ -44,6 +44,9 @@ interface ShopDetail {
   status: ShopStatus
   plan: ShopPlan
   planExpiry: string | null
+  paymentStatus: 'PAID' | 'UNPAID' | 'GRACE' | 'SUSPENDED'
+  paymentDueDate: string | null
+  paymentNote: string | null
   currency: string
   language: string
   createdAt: string
@@ -105,6 +108,14 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
 
+  // Subscription billing
+  const [editPayment, setEditPayment] = useState(false)
+  const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'UNPAID' | 'GRACE' | 'SUSPENDED'>('PAID')
+  const [paymentDueDate, setPaymentDueDate] = useState('')
+  const [paymentNote, setPaymentNote] = useState('')
+  const [savingPayment, setSavingPayment] = useState(false)
+  const [planPrice, setPlanPrice] = useState<number | null>(null)
+
   // Add team member
   const [showAddUser, setShowAddUser] = useState(false)
   const [addUserForm, setAddUserForm] = useState({ name: '', email: '', username: '', password: '', role: 'STAFF' })
@@ -125,9 +136,10 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [shopRes, policyRes] = await Promise.all([
+      const [shopRes, policyRes, plansRes] = await Promise.all([
         fetch(`/api/admin/shops/${id}`),
         fetch(`/api/admin/shops/${id}/policy`),
+        fetch('/api/admin/plans'),
       ])
       if (shopRes.ok) {
         const data = await shopRes.json()
@@ -141,6 +153,13 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
           phone: data.shop.phone ?? '',
           address: data.shop.address ?? '',
         })
+        setPaymentStatus(data.shop.paymentStatus ?? 'PAID')
+        setPaymentDueDate(data.shop.paymentDueDate ? new Date(data.shop.paymentDueDate).toISOString().split('T')[0] : '')
+        setPaymentNote(data.shop.paymentNote ?? '')
+        if (plansRes.ok) {
+          const plans = await plansRes.json()
+          setPlanPrice(plans[data.shop.plan]?.price ?? null)
+        }
       }
       if (policyRes.ok) {
         const pd = await policyRes.json()
@@ -190,6 +209,19 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
     await load()
     setEditPlan(false)
     setSaving(false)
+  }
+
+  async function savePayment() {
+    if (!shop) return
+    setSavingPayment(true)
+    await fetch(`/api/admin/shops/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentStatus, paymentDueDate: paymentDueDate || null, paymentNote }),
+    })
+    await load()
+    setEditPayment(false)
+    setSavingPayment(false)
   }
 
   async function changeStatus(status: ShopStatus) {
@@ -472,6 +504,88 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                   <QuotaBar label="Staff Members" used={shop._count.users} limit={effectiveLimits.staff} />
                   <QuotaBar label="Orders" used={shop._count.orders} limit={effectiveLimits.orders} />
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Subscription Billing */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50">
+                  <CreditCard className="h-4 w-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Subscription Billing</p>
+                  <p className="text-xs text-gray-400">
+                    {planPrice == null ? '' : planPrice > 0 ? `${planPrice.toFixed(3)} BHD / month` : 'Contact us pricing'}
+                  </p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setEditPayment(!editPayment)}
+                className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+                <Edit3 className="h-3 w-3" />{editPayment ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+
+            {editPayment ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {(['PAID', 'UNPAID', 'GRACE', 'SUSPENDED'] as const).map((s) => (
+                    <button key={s} type="button" onClick={() => setPaymentStatus(s)}
+                      className={`rounded-xl border-2 px-3 py-2 text-xs font-semibold transition-all ${
+                        paymentStatus === s
+                          ? s === 'PAID' ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                          : s === 'SUSPENDED' ? 'border-red-300 bg-red-50 text-red-700'
+                          : 'border-amber-300 bg-amber-50 text-amber-700'
+                          : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                      }`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-600">Payment Due Date</label>
+                  <input type="date" value={paymentDueDate} onChange={(e) => setPaymentDueDate(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-600">Note (internal)</label>
+                  <input value={paymentNote} onChange={(e) => setPaymentNote(e.target.value)}
+                    placeholder="e.g. Invoice #123 pending bank transfer"
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                </div>
+                {paymentStatus === 'SUSPENDED' && (
+                  <p className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                    <AlertOctagon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    New orders will be blocked platform-wide until this is changed.
+                  </p>
+                )}
+                <button type="button" onClick={savePayment} disabled={savingPayment}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">
+                  <Save className="h-4 w-4" />{savingPayment ? 'Saving…' : 'Save Billing Status'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+                  shop.paymentStatus === 'PAID' ? 'border-emerald-200 bg-emerald-50'
+                  : shop.paymentStatus === 'SUSPENDED' ? 'border-red-200 bg-red-50'
+                  : 'border-amber-200 bg-amber-50'
+                }`}>
+                  {shop.paymentStatus === 'SUSPENDED'
+                    ? <AlertOctagon className="h-5 w-5 text-red-600" />
+                    : <CreditCard className={`h-5 w-5 ${shop.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}`} />}
+                  <div>
+                    <p className={`font-bold ${
+                      shop.paymentStatus === 'PAID' ? 'text-emerald-700' : shop.paymentStatus === 'SUSPENDED' ? 'text-red-700' : 'text-amber-700'
+                    }`}>{shop.paymentStatus}</p>
+                    {shop.paymentDueDate && (
+                      <p className="text-xs text-gray-500">Due {new Date(shop.paymentDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    )}
+                  </div>
+                </div>
+                {shop.paymentNote && <p className="text-xs text-gray-500 px-1">{shop.paymentNote}</p>}
               </div>
             )}
           </div>
