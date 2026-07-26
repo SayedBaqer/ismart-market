@@ -39,17 +39,18 @@ export async function GET() {
         customer: { select: { displayName: true } },
       },
     }),
-    // Daily revenue for last 14 days
+    // Daily revenue for last 14 days — camelCase columns (no @map on Order fields)
+    // must be double-quoted to match the actual Postgres column names exactly.
     prisma.$queryRaw<{ day: string; total: number; count: number }[]>`
       SELECT
-        DATE(created_at) as day,
-        SUM(CAST(grand_total AS FLOAT)) as total,
+        DATE("createdAt") as day,
+        SUM(CAST("grandTotal" AS FLOAT)) as total,
         COUNT(*) as count
       FROM orders
-      WHERE shop_id = ${shopId}
+      WHERE "shopId" = ${shopId}
         AND status = 'COMPLETED'
-        AND created_at >= NOW() - INTERVAL '14 days'
-      GROUP BY DATE(created_at)
+        AND "createdAt" >= NOW() - INTERVAL '14 days'
+      GROUP BY DATE("createdAt")
       ORDER BY day ASC
     `,
   ])

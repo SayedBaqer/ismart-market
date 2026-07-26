@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, Download } from 'lucide-react'
+import { useStoreT } from '@/lib/i18n/store-context'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
@@ -9,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PwaInstallBanner() {
+  const t = useStoreT()
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [isIos, setIsIos] = useState(false)
@@ -54,9 +56,9 @@ export function PwaInstallBanner() {
         <button onClick={dismiss} className="absolute top-3 right-3 text-gray-400 hover:text-white">
           <X className="h-4 w-4" />
         </button>
-        <p className="text-sm font-semibold mb-1">Install iSmart Market</p>
+        <p className="text-sm font-semibold mb-1">{t.installAppTitle}</p>
         <p className="text-xs text-gray-300">
-          Tap <span className="font-bold">Share</span> then <span className="font-bold">Add to Home Screen</span> to install the app.
+          {t.installAppIosPrefix} <span className="font-bold">{t.installAppIosShare}</span> {t.installAppIosMiddle} <span className="font-bold">{t.installAppIosAdd}</span> {t.installAppIosSuffix}
         </p>
       </div>
     )
@@ -71,8 +73,8 @@ export function PwaInstallBanner() {
         <Download className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold">Install iSmart Market</p>
-        <p className="text-xs text-blue-100">Add to your home screen for quick access</p>
+        <p className="text-sm font-semibold">{t.installAppTitle}</p>
+        <p className="text-xs text-blue-100">{t.installAppAndroidBody}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <button onClick={dismiss} className="text-blue-200 hover:text-white">
@@ -82,7 +84,7 @@ export function PwaInstallBanner() {
           onClick={install}
           className="rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50"
         >
-          Install
+          {t.installBtn}
         </button>
       </div>
     </div>

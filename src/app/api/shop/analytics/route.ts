@@ -59,17 +59,18 @@ export async function GET() {
     prisma.customer.count({ where: { shopId } }),
     prisma.customer.count({ where: { shopId, createdAt: { gte: start30 } } }),
 
-    // Daily revenue last 30 days (raw query)
+    // Daily revenue last 30 days (raw query) — column names are camelCase in Postgres
+    // (no @map on Order fields), so they must be double-quoted to match exactly.
     prisma.$queryRaw<{ day: string; revenue: number; orders: number }[]>`
       SELECT
-        DATE(created_at) as day,
-        SUM(CAST(grand_total AS FLOAT)) as revenue,
+        DATE("createdAt") as day,
+        SUM(CAST("grandTotal" AS FLOAT)) as revenue,
         COUNT(*) as orders
       FROM orders
-      WHERE shop_id = ${shopId}
+      WHERE "shopId" = ${shopId}
         AND status = 'COMPLETED'
-        AND created_at >= ${start30}
-      GROUP BY DATE(created_at)
+        AND "createdAt" >= ${start30}
+      GROUP BY DATE("createdAt")
       ORDER BY day ASC
     `,
 

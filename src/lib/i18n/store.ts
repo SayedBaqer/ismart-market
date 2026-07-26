@@ -177,6 +177,15 @@ export const storeT = {
     error: 'Something went wrong',
     save: 'Save',
     cancel: 'Cancel',
+    // ── PWA install banner ────────────────────────────────────────────────────
+    installAppTitle: 'Install iSmart Market',
+    installAppIosShare: 'Share',
+    installAppIosAdd: 'Add to Home Screen',
+    installAppIosPrefix: 'Tap',
+    installAppIosMiddle: 'then',
+    installAppIosSuffix: 'to install the app.',
+    installAppAndroidBody: 'Add to your home screen for quick access',
+    installBtn: 'Install',
   },
   ar: {
     dir: 'rtl' as const,
@@ -354,6 +363,15 @@ export const storeT = {
     error: 'حدث خطأ ما',
     save: 'حفظ',
     cancel: 'إلغاء',
+    // ── PWA install banner ────────────────────────────────────────────────────
+    installAppTitle: 'ثبّت آي سمارت ماركت',
+    installAppIosShare: 'مشاركة',
+    installAppIosAdd: 'إضافة إلى الشاشة الرئيسية',
+    installAppIosPrefix: 'اضغط على',
+    installAppIosMiddle: 'ثم',
+    installAppIosSuffix: 'لتثبيت التطبيق.',
+    installAppAndroidBody: 'أضفه إلى شاشتك الرئيسية للوصول السريع',
+    installBtn: 'تثبيت',
   },
 } satisfies Record<StoreLang, object>
 
