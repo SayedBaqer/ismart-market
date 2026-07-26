@@ -89,8 +89,8 @@ export default function OpenShopPage() {
   const isLoggedIn = status === 'authenticated'
   const isLoading = status === 'loading'
 
-  // When logged in, step 0 (account) is skipped → first step becomes index 1
-  const firstStep = isLoggedIn ? 1 : 0
+  // firstStep is always 0 — STEPS array itself excludes the account step when logged in
+  const firstStep = 0
 
   const STEPS = [
     ...(isLoggedIn ? [] : [{ icon: User,    label: 'Your Account', desc: 'Create your free account' }]),
@@ -221,13 +221,13 @@ export default function OpenShopPage() {
         return
       }
 
-      // Auto sign-in if a new account was created
+      // Auto sign-in if a new account was created (best-effort — don't block success)
       if (d.newAccount && d.ownerEmail) {
-        await signIn('credentials', {
+        signIn('credentials', {
           redirect: false,
           identifier: d.ownerEmail,
           password: form.ownerPassword,
-        })
+        }).catch(() => {})
       }
 
       setDone(true)
