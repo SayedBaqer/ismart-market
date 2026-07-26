@@ -8,8 +8,6 @@ const schema = z.discriminatedUnion('mode', [
     mode: z.literal('add'),
     productId: z.string(),
     qty: z.number().positive(),
-    unitCostBhd: z.number().min(0).optional(),
-    unitCostCny: z.number().min(0).optional(),
     reference: z.string().optional(),
     reason: z.string().optional(),
   }),
@@ -52,12 +50,14 @@ export async function POST(req: NextRequest) {
         reason: data.reason,
       })
     } else if (data.mode === 'add') {
+      // Admin never sets purchase cost — that's the shop owner's private data.
+      // Cost stays 0 here; the shop can backfill it from their own /shop/stock page.
       await adjustStock({
         productId: data.productId,
-        qty: data.qty,             // correct param name
-        costBhd: data.unitCostBhd ?? 0,   // correct param name
-        costCny: data.unitCostCny ?? 0,   // correct param name
-        createdById: userId,       // correct param name
+        qty: data.qty,
+        costBhd: 0,
+        costCny: 0,
+        createdById: userId,
         reason: data.reason ?? 'Manual receive',
         reference: data.reference,
         type: 'IMPORT',

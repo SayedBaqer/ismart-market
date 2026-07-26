@@ -14,7 +14,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
     where: { id },
     include: {
       customer: true,
-      items: { orderBy: { sortOrder: 'asc' } },
+      // Explicit select — never return unitCostSnapshot (shop owner's private cost data) to admin
+      items: {
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          id: true, documentId: true, productId: true, variationId: true, name: true, sku: true,
+          description: true, qty: true, unitPrice: true, discountPct: true, taxPct: true,
+          lineTotal: true, serial: true, warranty: true, sortOrder: true,
+        },
+      },
       payments: { orderBy: { paidAt: 'asc' } },
       createdBy: { select: { id: true, name: true, email: true } },
     },

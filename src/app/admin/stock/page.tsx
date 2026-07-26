@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Package, Plus, Minus, History, RefreshCw, Search,
-  ChevronUp, TrendingUp, AlertTriangle, BoxesIcon, X, Save, Tag,
+  ChevronUp, AlertTriangle, BoxesIcon, X, Save, Tag,
 } from 'lucide-react'
 
 interface StockRow {
@@ -18,7 +18,6 @@ interface StockRow {
   price: number
   comparePrice: number | null
   currentQty: number
-  avgCostBhd: number
   threshold: number | null
   batches: Batch[]
 }
@@ -27,7 +26,6 @@ interface Batch {
   id: string
   qtyReceived: number
   qtyRemaining: number
-  unitCostBhd: number
   reference: string | null
   receivedAt: string
 }
@@ -46,7 +44,6 @@ export default function StockPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [dialog, setDialog] = useState<AdjustDialog | null>(null)
   const [adjQty, setAdjQty] = useState('')
-  const [adjCostBhd, setAdjCostBhd] = useState('')
   const [adjRef, setAdjRef] = useState('')
   const [adjReason, setAdjReason] = useState('')
   const [adjLoading, setAdjLoading] = useState(false)
@@ -112,7 +109,6 @@ export default function StockPage() {
   function openDialog(row: StockRow, mode: AdjustDialog['mode']) {
     setDialog({ productId: row.id, productName: row.name, currentQty: row.currentQty, mode })
     setAdjQty(mode === 'set' ? String(row.currentQty) : '')
-    setAdjCostBhd('')
     setAdjRef('')
     setAdjReason('')
     setAdjError('')
@@ -126,15 +122,14 @@ export default function StockPage() {
     setAdjLoading(true)
     setAdjError('')
 
+    // Admin never sets purchase cost — that's the shop owner's private business data,
+    // entered from the shop's own /shop/stock page instead.
     const payload: Record<string, unknown> = {
       productId: dialog.productId,
       mode: dialog.mode,
       qty,
       reason: adjReason || undefined,
       reference: adjRef || undefined,
-    }
-    if (dialog.mode === 'add') {
-      payload.unitCostBhd = adjCostBhd ? Number(adjCostBhd) : undefined
     }
 
     const res = await fetch('/api/admin/stock/adjust', {
@@ -164,8 +159,6 @@ export default function StockPage() {
   const totalItems = rows.reduce((s, r) => s + r.currentQty, 0)
   const lowStockCount = rows.filter((r) => r.threshold != null && r.currentQty <= r.threshold && r.currentQty > 0).length
   const outOfStockCount = rows.filter((r) => r.currentQty === 0).length
-  const totalValue = rows.reduce((s, r) => s + r.currentQty * r.avgCostBhd, 0)
-
   const modeConfig = {
     add: { title: 'Receive Stock', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: Plus },
     remove: { title: 'Remove Stock', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', icon: Minus },
@@ -178,7 +171,7 @@ export default function StockPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Stock Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">FIFO costing · track quantities, costs, and sales prices</p>
+          <p className="text-sm text-gray-500 mt-0.5">Track quantities and sales prices across all shops</p>
         </div>
         <div className="flex items-center gap-2">
           {dirtyCount > 0 && (
@@ -203,7 +196,7 @@ export default function StockPage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-blue-100">Total Units</span>
@@ -211,15 +204,6 @@ export default function StockPage() {
           </div>
           <p className="text-3xl font-bold">{totalItems.toLocaleString()}</p>
           <p className="text-xs text-blue-200 mt-1">{rows.length} products tracked</p>
-        </div>
-
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-emerald-100">Stock Value</span>
-            <TrendingUp className="h-5 w-5 text-emerald-200" />
-          </div>
-          <p className="text-2xl font-bold">{formatCurrency(totalValue, 'BHD')}</p>
-          <p className="text-xs text-emerald-200 mt-1">at average cost</p>
         </div>
 
         <div className={`rounded-2xl p-4 shadow-sm ${lowStockCount > 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white' : 'bg-white border border-gray-100'}`}>
@@ -273,10 +257,8 @@ export default function StockPage() {
                   <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-gray-500">
                     <th className="px-5 py-3.5 text-left font-semibold">Product</th>
                     <th className="px-5 py-3.5 text-right font-semibold">Qty</th>
-                    <th className="px-5 py-3.5 text-right font-semibold">Avg Cost</th>
                     <th className="px-5 py-3.5 text-right font-semibold">Sales Price</th>
                     <th className="px-5 py-3.5 text-right font-semibold">Compare Price</th>
-                    <th className="px-5 py-3.5 text-right font-semibold">Stock Value</th>
                     <th className="px-5 py-3.5 text-center font-semibold">Status</th>
                     <th className="px-5 py-3.5 text-center font-semibold">Actions</th>
                   </tr>
@@ -286,7 +268,6 @@ export default function StockPage() {
                     const isLow = row.threshold != null && row.currentQty <= row.threshold && row.currentQty > 0
                     const isOut = row.currentQty === 0
                     const isExpanded = expanded.has(row.id)
-                    const stockValue = row.currentQty * row.avgCostBhd
 
                     const editedPrice = priceEdits[row.id]
                     const displayPrice = editedPrice?.price ?? String(row.price)
@@ -314,9 +295,6 @@ export default function StockPage() {
                               <div className="text-xs text-gray-400 mt-0.5">min {row.threshold}</div>
                             )}
                           </td>
-                          <td className="px-5 py-4 text-right text-gray-600 font-medium">
-                            {row.avgCostBhd > 0 ? formatCurrency(row.avgCostBhd, 'BHD') : <span className="text-gray-300">—</span>}
-                          </td>
                           {/* Sales price — inline editable */}
                           <td className="px-3 py-3 text-right">
                             <input
@@ -339,9 +317,6 @@ export default function StockPage() {
                               placeholder="—"
                               className={`w-24 rounded-lg border px-2 py-1.5 text-right text-sm tabular-nums text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300 ${isDirty ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'}`}
                             />
-                          </td>
-                          <td className="px-5 py-4 text-right font-semibold text-gray-700">
-                            {stockValue > 0 ? formatCurrency(stockValue, 'BHD') : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="px-5 py-4 text-center">
                             {isOut ? (
@@ -391,7 +366,7 @@ export default function StockPage() {
                         {/* FIFO Batch rows */}
                         {isExpanded && (
                           <tr key={`${row.id}-batches`}>
-                            <td colSpan={8} className="px-5 py-4 bg-slate-50/70 border-b border-gray-100">
+                            <td colSpan={6} className="px-5 py-4 bg-slate-50/70 border-b border-gray-100">
                               <div className="flex items-center gap-2 mb-3">
                                 <History className="h-4 w-4 text-slate-400" />
                                 <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">
@@ -408,7 +383,6 @@ export default function StockPage() {
                                         <th className="px-4 py-2 text-left font-semibold">Date Received</th>
                                         <th className="px-4 py-2 text-right font-semibold">Received</th>
                                         <th className="px-4 py-2 text-right font-semibold">Remaining</th>
-                                        <th className="px-4 py-2 text-right font-semibold">Unit Cost</th>
                                         <th className="px-4 py-2 text-left font-semibold">Reference</th>
                                       </tr>
                                     </thead>
@@ -420,9 +394,6 @@ export default function StockPage() {
                                           </td>
                                           <td className="px-4 py-2.5 text-right font-mono">{b.qtyReceived}</td>
                                           <td className="px-4 py-2.5 text-right font-mono font-bold text-slate-800">{b.qtyRemaining}</td>
-                                          <td className="px-4 py-2.5 text-right font-medium text-slate-700">
-                                            {b.unitCostBhd > 0 ? formatCurrency(b.unitCostBhd, 'BHD') : '—'}
-                                          </td>
                                           <td className="px-4 py-2.5 text-slate-500 font-mono">{b.reference ?? '—'}</td>
                                         </tr>
                                       ))}
@@ -490,23 +461,12 @@ export default function StockPage() {
                 />
 
                 {dialog.mode === 'add' && (
-                  <>
-                    <Input
-                      label="Unit Cost in BHD (optional)"
-                      type="number"
-                      min={0}
-                      step={0.001}
-                      value={adjCostBhd}
-                      onChange={(e) => setAdjCostBhd(e.target.value)}
-                      placeholder="0.000"
-                    />
-                    <Input
-                      label="Purchase Reference (optional)"
-                      value={adjRef}
-                      onChange={(e) => setAdjRef(e.target.value)}
-                      placeholder="e.g. PO-2025-001"
-                    />
-                  </>
+                  <Input
+                    label="Purchase Reference (optional)"
+                    value={adjRef}
+                    onChange={(e) => setAdjRef(e.target.value)}
+                    placeholder="e.g. PO-2025-001"
+                  />
                 )}
 
                 <Input

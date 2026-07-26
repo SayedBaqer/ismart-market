@@ -155,7 +155,17 @@ export async function POST(req: NextRequest) {
       createdById: userId,
       items: { create: lineItems },
     },
-    include: { items: true, customer: true },
+    include: {
+      // Explicit select — never return unitCostSnapshot (shop owner's private cost data) to admin
+      items: {
+        select: {
+          id: true, documentId: true, productId: true, variationId: true, name: true, sku: true,
+          description: true, qty: true, unitPrice: true, discountPct: true, taxPct: true,
+          lineTotal: true, serial: true, warranty: true, sortOrder: true,
+        },
+      },
+      customer: true,
+    },
   })
 
   return NextResponse.json(doc, { status: 201 })

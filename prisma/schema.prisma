@@ -46,8 +46,27 @@ model Shop {
   documents   Document[]
   news        ShopNews[]
   branches    ShopBranch[]
+  plugins     ShopPlugin[]
 
   @@map("shops")
+}
+
+// Per-shop plugin enablement + settings (Plugin model itself is defined further down,
+// near Settings — extended there with category/minPlan/description for this system)
+model ShopPlugin {
+  id         String    @id @default(cuid())
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  pluginSlug String
+  plugin     Plugin    @relation(fields: [pluginSlug], references: [slug], onDelete: Cascade)
+  enabled    Boolean   @default(false)
+  settings   Json      @default("{}")
+  enabledAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([shopId, pluginSlug])
+  @@map("shop_plugins")
 }
 
 // Physical locations of a shop (main branch + additional outlets)
@@ -641,12 +660,19 @@ model NewsPost {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Plugin {
-  slug      String   @id
-  name      String
-  version   String
-  active    Boolean  @default(false)
-  config    Json     @default("{}")
-  updatedAt DateTime @updatedAt
+  slug        String   @id
+  name        String
+  version     String
+  active      Boolean  @default(false) // platform-wide kill switch
+  config      Json     @default("{}")
+  description String?
+  category    String   @default("general") // 'marketing' | 'analytics' | ...
+  icon        String?  // lucide icon name for UI
+  minPlan     ShopPlan @default(FREE)       // minimum shop plan required to enable
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shopPlugins ShopPlugin[]
 
   @@map("plugins")
 }

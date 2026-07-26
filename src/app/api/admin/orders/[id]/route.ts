@@ -17,8 +17,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     where: { id },
     include: {
       customer: true,
+      // Explicit select — never return unitCostSnapshot (shop owner's private cost data) to admin
       lineItems: {
-        include: { product: { select: { id: true, slug: true, images: true } } },
+        select: {
+          id: true, orderId: true, productId: true, name: true, sku: true, qty: true,
+          unitPrice: true, discountPct: true, taxPct: true, lineTotal: true, sortOrder: true,
+          product: { select: { id: true, slug: true, images: true } },
+        },
         orderBy: { sortOrder: 'asc' },
       },
     },

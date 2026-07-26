@@ -58,6 +58,8 @@ export async function GET(req: NextRequest) {
     },
   })
 
+  // Cost/purchase-price data is the shop owner's private business data — never
+  // returned to platform admin, only quantity/threshold for stock management.
   const rows = products.map((p: typeof products[number]) => ({
     id: p.id,
     sku: p.sku,
@@ -65,15 +67,11 @@ export async function GET(req: NextRequest) {
     price: Number(p.price),
     comparePrice: p.comparePrice != null ? Number(p.comparePrice) : null,
     currentQty: p.stockMeta ? Number(p.stockMeta.currentQty) : 0,
-    avgCostBhd: p.stockMeta ? Number(p.stockMeta.avgCostBhd) : 0,
-    avgCostCny: p.stockMeta ? Number(p.stockMeta.avgCostCny) : 0,
     threshold: p.stockMeta?.threshold ?? null,
     batches: p.fifoBatches.map((b: typeof p.fifoBatches[number]) => ({
       id: b.id,
       qtyReceived: Number(b.qtyReceived),
       qtyRemaining: Number(b.qtyRemaining),
-      unitCostBhd: Number(b.unitCostBhd),
-      unitCostCny: Number(b.unitCostCny),
       reference: b.reference,
       receivedAt: b.receivedAt.toISOString(),
     })),
