@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
-  LayoutDashboard, ShoppingCart, Package, Users,
-  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Instagram,
+  LayoutDashboard, ShoppingCart, Package, Box, Users,
+  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Instagram, KeyRound,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -27,6 +27,7 @@ function navItems(role: string) {
     { href: base, label: 'Dashboard', icon: LayoutDashboard, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
     { href: `${base}/orders`, label: 'Orders', icon: ShoppingCart, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
     { href: `${base}/delivery`, label: 'Delivery Board', icon: Truck, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
+    { href: `${base}/products`, label: 'Products', icon: Box, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/stock`, label: 'Stock', icon: Package, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/customers`, label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/billing`, label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
@@ -35,7 +36,9 @@ function navItems(role: string) {
     { href: `${base}/users`, label: 'Staff Users', icon: Users, roles: ['MANAGER'] },
     { href: `${base}/news`, label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
     { href: `${base}/plugins/instagram`, label: 'Instagram', icon: Instagram, roles: ['MANAGER'] },
+    { href: `${base}/profile`, label: 'Shop Profile', icon: Store, roles: ['MANAGER'] },
     { href: `${base}/settings`, label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
+    { href: `${base}/account`, label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
   ]
   return all.filter((item) => item.roles.includes(role))
 }

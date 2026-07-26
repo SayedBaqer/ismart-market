@@ -2,8 +2,11 @@
  * server.js — cPanel Node.js Selector startup file
  *
  * cPanel expects a file named server.js in the project root.
- * This auto-generates NEXTAUTH_SECRET on first boot if not set,
+ * This auto-generates AUTH_SECRET on first boot if not set,
  * then starts the Next.js production server.
+ *
+ * NextAuth v5 reads AUTH_SECRET (not NEXTAUTH_SECRET) — keep this in sync with
+ * src/lib/env.ts or sessions will invalidate unpredictably across restarts.
  */
 
 const { execSync, spawn } = require('child_process')
@@ -14,15 +17,17 @@ const crypto = require('crypto')
 const ROOT = __dirname
 const ENV_FILE = path.join(ROOT, '.env.local')
 
-// ── Auto-generate NEXTAUTH_SECRET if missing ──────────────────────────────────
+// ── Auto-generate AUTH_SECRET if missing ──────────────────────────────────
 function ensureSecret() {
   let content = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, 'utf-8') : ''
 
-  if (!content.includes('NEXTAUTH_SECRET=') && !process.env.NEXTAUTH_SECRET) {
-    const secret = crypto.randomBytes(32).toString('base64')
-    content = `NEXTAUTH_SECRET="${secret}"\n${content}`
+  // Backward-compat: migrate an old NEXTAUTH_SECRET-only file to also define AUTH_SECRET
+  if (!content.includes('AUTH_SECRET=') && !process.env.AUTH_SECRET) {
+    const legacyMatch = content.match(/^NEXTAUTH_SECRET="?([^"\n]*)"?$/m)
+    const secret = legacyMatch ? legacyMatch[1] : crypto.randomBytes(32).toString('base64')
+    content = `AUTH_SECRET="${secret}"\n${content}`
     fs.writeFileSync(ENV_FILE, content, 'utf-8')
-    console.log('[ismart] NEXTAUTH_SECRET generated and saved to .env.local')
+    console.log('[ismart] AUTH_SECRET generated and saved to .env.local')
     return true // signals a restart may be helpful but not required
   }
   return false

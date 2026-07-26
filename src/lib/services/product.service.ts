@@ -71,17 +71,19 @@ export interface ProductListOptions {
   categoryId?: string
   isActive?: boolean
   lowStock?: boolean
+  shopId?: string
   page?: number
   pageSize?: number
 }
 
 export async function getProducts(opts: ProductListOptions = {}) {
-  const { search, categoryId, isActive, page = 1, pageSize = 20 } = opts
+  const { search, categoryId, isActive, shopId, page = 1, pageSize = 20 } = opts
   const skip = (page - 1) * pageSize
 
   const where: Prisma.ProductWhereInput = {
     ...(isActive !== undefined && { isActive }),
     ...(categoryId && { categoryId }),
+    ...(shopId && { shopId }),
     ...(search && {
       OR: [
         { name: { contains: search, ...ci() } },
@@ -131,7 +133,7 @@ export async function getProductBySlug(slug: string) {
   })
 }
 
-export async function createProduct(input: CreateProductInput, createdById?: string) {
+export async function createProduct(input: CreateProductInput, createdById?: string, shopId?: string) {
   // Generate SKU if not provided
   let sku = input.sku
   if (!sku) {
@@ -156,6 +158,7 @@ export async function createProduct(input: CreateProductInput, createdById?: str
         isHidden: input.isHidden,
         trackStock: input.trackStock,
         weight: input.weight,
+        ...(shopId && { shopId }),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         meta: input.meta as any,
       },

@@ -14,7 +14,13 @@ const loginSchema = z.object({
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: 'jwt' },
+  // Explicit + fallback so whichever var was actually configured on the host works —
+  // NextAuth v5 only reads AUTH_SECRET by default, but some deploy paths only set NEXTAUTH_SECRET.
+  // A missing/unstable secret makes JWTs signed by one server instance unverifiable by another,
+  // which presents as users getting logged out repeatedly at random.
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  trustHost: true,
+  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 },
   pages: {
     signIn: '/admin/login',
     error: '/admin/login',

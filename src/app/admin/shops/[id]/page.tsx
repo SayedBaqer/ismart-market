@@ -8,6 +8,7 @@ import {
   Package, ShoppingCart, Users, TrendingUp, Crown, Zap, Shield,
   Calendar, Phone, Mail, MapPin, Edit3, Save, Globe, AlertTriangle,
   ChevronRight, BarChart2, Activity, BadgeCheck, Sliders,
+  UserCog, KeyRound, Trash2, Ban, Power,
 } from 'lucide-react'
 
 type ShopPlan = 'FREE' | 'STARTER' | 'BUSINESS' | 'ENTERPRISE'
@@ -49,6 +50,11 @@ interface ShopDetail {
   settings: Record<string, unknown>
   _count: { products: number; orders: number; users: number; customers: number }
   revenue: number
+  users: {
+    id: string
+    role: string
+    user: { id: string; name: string | null; email: string; role: string; isActive: boolean }
+  }[]
 }
 
 const PLAN_META = {
@@ -83,6 +89,22 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
   const [suspendReason, setSuspendReason] = useState('')
   const [showSuspend, setShowSuspend] = useState(false)
 
+  // Shop info edit
+  const [editInfo, setEditInfo] = useState(false)
+  const [infoForm, setInfoForm] = useState({ name: '', description: '', email: '', phone: '', address: '' })
+  const [savingInfo, setSavingInfo] = useState(false)
+
+  // Team management
+  const [resetPasswordFor, setResetPasswordFor] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [teamBusyId, setTeamBusyId] = useState<string | null>(null)
+  const [teamError, setTeamError] = useState('')
+
+  // Hard delete
+  const [showHardDelete, setShowHardDelete] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
   // Approval policy state
   const [policy, setPolicy] = useState<{
     activities: Record<Activity, PolicyMode>
@@ -106,6 +128,13 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
         setShop(data.shop)
         setSelectedPlan(data.shop.plan)
         setPlanExpiry(data.shop.planExpiry ? new Date(data.shop.planExpiry).toISOString().split('T')[0] : '')
+        setInfoForm({
+          name: data.shop.name ?? '',
+          description: data.shop.description ?? '',
+          email: data.shop.email ?? '',
+          phone: data.shop.phone ?? '',
+          address: data.shop.address ?? '',
+        })
       }
       if (policyRes.ok) {
         const pd = await policyRes.json()
@@ -169,6 +198,69 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
     setShowSuspend(false)
     setSuspendReason('')
     setSaving(false)
+  }
+
+  async function saveInfo() {
+    if (!infoForm.name.trim()) return
+    setSavingInfo(true)
+    await fetch(`/api/admin/shops/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(infoForm),
+    })
+    await load()
+    setEditInfo(false)
+    setSavingInfo(false)
+  }
+
+  async function toggleUserActive(shopUserId: string, current: boolean) {
+    setTeamBusyId(shopUserId)
+    setTeamError('')
+    const res = await fetch(`/api/admin/shops/${id}/users/${shopUserId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: !current }),
+    })
+    if (!res.ok) { const d = await res.json(); setTeamError(d.error ?? 'Failed to update') }
+    await load()
+    setTeamBusyId(null)
+  }
+
+  async function resetUserPassword(shopUserId: string) {
+    if (newPassword.length < 6) { setTeamError('Password must be at least 6 characters'); return }
+    setTeamBusyId(shopUserId)
+    setTeamError('')
+    const res = await fetch(`/api/admin/shops/${id}/users/${shopUserId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword }),
+    })
+    if (!res.ok) { const d = await res.json(); setTeamError(d.error ?? 'Failed to reset password') }
+    else { setResetPasswordFor(null); setNewPassword('') }
+    setTeamBusyId(null)
+  }
+
+  async function removeTeamMember(shopUserId: string) {
+    if (!confirm('Remove this account from the shop?')) return
+    setTeamBusyId(shopUserId)
+    setTeamError('')
+    const res = await fetch(`/api/admin/shops/${id}/users/${shopUserId}`, { method: 'DELETE' })
+    if (!res.ok) { const d = await res.json(); setTeamError(d.error ?? 'Failed to remove') }
+    await load()
+    setTeamBusyId(null)
+  }
+
+  async function hardDeleteShop() {
+    if (!shop || deleteConfirmText !== shop.name) return
+    setDeleting(true)
+    const res = await fetch(`/api/admin/shops/${id}?mode=hard`, { method: 'DELETE' })
+    if (res.ok) {
+      window.location.href = '/admin/shops'
+    } else {
+      const d = await res.json()
+      alert(d.error ?? 'Failed to delete shop')
+      setDeleting(false)
+    }
   }
 
   if (loading) return (
@@ -425,16 +517,165 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Danger zone */}
-              {shop.status !== 'CLOSED' && (
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-xs font-semibold text-red-600 mb-2">Danger Zone</p>
-                  <button type="button" onClick={() => { if (confirm('Close this shop permanently?')) changeStatus('CLOSED') }} disabled={saving}
+              <div className="border-t border-gray-100 pt-3 space-y-2">
+                <p className="text-xs font-semibold text-red-600 mb-1">Danger Zone</p>
+                {shop.status !== 'CLOSED' && (
+                  <button type="button" onClick={() => { if (confirm('Close this shop? It can be reactivated later.')) changeStatus('CLOSED') }} disabled={saving}
                     className="flex w-full items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
-                    <XCircle className="h-4 w-4" /> Close Shop Permanently
+                    <XCircle className="h-4 w-4" /> Close Shop
                   </button>
-                </div>
-              )}
+                )}
+                {!showHardDelete ? (
+                  <button type="button" onClick={() => setShowHardDelete(true)}
+                    className="flex w-full items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
+                    <Trash2 className="h-4 w-4" /> Delete Shop Permanently
+                  </button>
+                ) : (
+                  <div className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-3">
+                    <p className="text-xs text-red-700">
+                      This permanently deletes the shop, its team, and branches. Products, orders and documents
+                      are preserved but detached from this shop. This cannot be undone.
+                    </p>
+                    <p className="text-xs font-semibold text-red-700">Type the shop name (&quot;{shop.name}&quot;) to confirm:</p>
+                    <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      className="w-full rounded-lg border border-red-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={hardDeleteShop} disabled={deleting || deleteConfirmText !== shop.name}
+                        className="flex-1 rounded-xl bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-40">
+                        {deleting ? 'Deleting…' : 'Confirm Permanent Delete'}
+                      </button>
+                      <button type="button" onClick={() => { setShowHardDelete(false); setDeleteConfirmText('') }} className="text-sm text-gray-500 px-3">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Shop Info */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50">
+                <Edit3 className="h-4 w-4 text-teal-600" />
+              </div>
+              <p className="font-semibold text-gray-900">Shop Info</p>
+            </div>
+            <button type="button" onClick={() => setEditInfo(!editInfo)}
+              className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+              <Edit3 className="h-3 w-3" />{editInfo ? 'Cancel' : 'Edit'}
+            </button>
+          </div>
+
+          {editInfo ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-600">Shop Name</label>
+                <input value={infoForm.name} onChange={(e) => setInfoForm((v) => ({ ...v, name: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600">Description</label>
+                <textarea value={infoForm.description} onChange={(e) => setInfoForm((v) => ({ ...v, description: e.target.value }))} rows={2}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-600">Email</label>
+                  <input value={infoForm.email} onChange={(e) => setInfoForm((v) => ({ ...v, email: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-600">Phone</label>
+                  <input value={infoForm.phone} onChange={(e) => setInfoForm((v) => ({ ...v, phone: e.target.value }))}
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600">Address</label>
+                <input value={infoForm.address} onChange={(e) => setInfoForm((v) => ({ ...v, address: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <button type="button" onClick={saveInfo} disabled={savingInfo}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50">
+                <Save className="h-4 w-4" />{savingInfo ? 'Saving…' : 'Save Info'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5 text-sm text-gray-600">
+              <p><span className="font-semibold text-gray-800">{shop.name}</span></p>
+              {shop.description && <p className="text-gray-500">{shop.description}</p>}
+              {shop.email && <p className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-gray-400" />{shop.email}</p>}
+              {shop.phone && <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-gray-400" />{shop.phone}</p>}
+              {shop.address && <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gray-400" />{shop.address}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Shop Team */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50">
+              <UserCog className="h-4 w-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">Shop Team</p>
+              <p className="text-xs text-gray-400">Owner &amp; staff accounts — deactivate, reset password, or remove</p>
+            </div>
+          </div>
+
+          {teamError && <p className="mb-2 text-xs text-red-600">{teamError}</p>}
+
+          <div className="space-y-2">
+            {shop.users.map((su) => {
+              const busy = teamBusyId === su.id
+              const resetting = resetPasswordFor === su.id
+              return (
+                <div key={su.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{su.user.name ?? 'Unnamed'}</p>
+                      <p className="text-xs text-gray-500 truncate">{su.user.email} · {su.role}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${su.user.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'}`}>
+                        {su.user.isActive ? 'ACTIVE' : 'DISABLED'}
+                      </span>
+                      <button type="button" disabled={busy} onClick={() => toggleUserActive(su.id, su.user.isActive)}
+                        title={su.user.isActive ? 'Disable account' : 'Enable account'}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50">
+                        {su.user.isActive ? <Ban className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => { setResetPasswordFor(resetting ? null : su.id); setNewPassword('') }}
+                        title="Reset password" className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50">
+                        <KeyRound className="h-3.5 w-3.5" />
+                      </button>
+                      <button type="button" disabled={busy} onClick={() => removeTeamMember(su.id)}
+                        title="Remove from shop" className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {resetting && (
+                    <div className="mt-2 flex gap-2">
+                      <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New password (min 6 chars)"
+                        className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                      <button type="button" onClick={() => resetUserPassword(su.id)} disabled={busy}
+                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                        {busy ? '…' : 'Set'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {shop.users.length === 0 && (
+              <p className="text-center text-sm text-gray-400 py-6">No accounts linked to this shop</p>
+            )}
           </div>
         </div>
 

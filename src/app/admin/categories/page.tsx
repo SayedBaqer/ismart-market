@@ -14,6 +14,7 @@ interface Category {
   description: string | null
   isActive: boolean
   parentId: string | null
+  meta?: { translations?: { ar?: { name?: string; description?: string } } }
   _count: { products: number }
 }
 
@@ -23,9 +24,11 @@ interface FormState {
   description: string
   parentId: string
   isActive: boolean
+  nameAr: string
+  descriptionAr: string
 }
 
-const EMPTY: FormState = { name: '', slug: '', description: '', parentId: '', isActive: true }
+const EMPTY: FormState = { name: '', slug: '', description: '', parentId: '', isActive: true, nameAr: '', descriptionAr: '' }
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -60,6 +63,8 @@ export default function CategoriesPage() {
       description: cat.description ?? '',
       parentId: cat.parentId ?? '',
       isActive: cat.isActive,
+      nameAr: cat.meta?.translations?.ar?.name ?? '',
+      descriptionAr: cat.meta?.translations?.ar?.description ?? '',
     })
     setError('')
     setShowForm(true)
@@ -73,6 +78,18 @@ export default function CategoriesPage() {
     const url = editId ? `/api/categories/${editId}` : '/api/categories'
     const method = editId ? 'PUT' : 'POST'
 
+    const existing = editId ? categories.find((c) => c.id === editId) : undefined
+    const meta = {
+      ...(existing?.meta ?? {}),
+      translations: {
+        ...(existing?.meta?.translations ?? {}),
+        ar: {
+          ...(form.nameAr.trim() && { name: form.nameAr.trim() }),
+          ...(form.descriptionAr.trim() && { description: form.descriptionAr.trim() }),
+        },
+      },
+    }
+
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -82,6 +99,7 @@ export default function CategoriesPage() {
         description: form.description.trim() || undefined,
         parentId: form.parentId || undefined,
         isActive: form.isActive,
+        meta,
       }),
     })
 
@@ -170,6 +188,21 @@ export default function CategoriesPage() {
                     ))}
                 </select>
               </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 border-t border-gray-100 pt-3">
+              <Input
+                label="Arabic Name (الاسم بالعربية)"
+                dir="rtl"
+                value={form.nameAr}
+                onChange={(e) => setForm({ ...form, nameAr: e.target.value })}
+                placeholder="مثال: حاضنات"
+              />
+              <Input
+                label="Arabic Description (الوصف بالعربية)"
+                dir="rtl"
+                value={form.descriptionAr}
+                onChange={(e) => setForm({ ...form, descriptionAr: e.target.value })}
+              />
             </div>
             <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
               <input

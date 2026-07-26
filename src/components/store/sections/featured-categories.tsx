@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
+import { getStoreLang } from '@/lib/i18n/get-store-lang'
+import { t as tc } from '@/lib/i18n/translate-content'
 import { ArrowRight, Grid3x3 } from 'lucide-react'
 
 const CATEGORY_GRADIENTS = [
@@ -14,12 +16,15 @@ const CATEGORY_GRADIENTS = [
 ]
 
 export async function FeaturedCategoriesSection() {
-  const categories = await prisma.category.findMany({
-    where: { isActive: true, parentId: null },
-    take: 8,
-    orderBy: { name: 'asc' },
-    include: { _count: { select: { products: { where: { isActive: true, isHidden: false } } } } },
-  })
+  const [categories, lang] = await Promise.all([
+    prisma.category.findMany({
+      where: { isActive: true, parentId: null },
+      take: 8,
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { products: { where: { isActive: true, isHidden: false } } } } },
+    }),
+    getStoreLang(),
+  ])
 
   if (categories.length === 0) return null
 
@@ -45,7 +50,9 @@ export async function FeaturedCategoriesSection() {
 
         {/* Grid */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          {categories.map((cat, i) => (
+          {categories.map((cat, i) => {
+            const catName = tc(cat.meta, 'name', cat.name, lang)
+            return (
             <Link
               key={cat.id}
               href={`/products?category=${cat.slug}`}
@@ -60,10 +67,10 @@ export async function FeaturedCategoriesSection() {
               <div
                 className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${CATEGORY_GRADIENTS[i % CATEGORY_GRADIENTS.length]} text-white shadow-sm`}
               >
-                <span className="text-base font-extrabold">{cat.name.charAt(0)}</span>
+                <span className="text-base font-extrabold">{catName.charAt(0)}</span>
               </div>
 
-              <p className="text-sm font-bold text-gray-900 leading-snug">{cat.name}</p>
+              <p className="text-sm font-bold text-gray-900 leading-snug">{catName}</p>
               <p className="mt-1 text-xs text-gray-400">
                 {cat._count.products} product{cat._count.products !== 1 ? 's' : ''}
               </p>
@@ -72,7 +79,8 @@ export async function FeaturedCategoriesSection() {
                 Browse <ArrowRight className="h-3 w-3" />
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

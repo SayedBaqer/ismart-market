@@ -16,6 +16,8 @@ interface Category {
 
 interface ProductFormProps {
   categories: Category[]
+  apiBase?: string
+  redirectPath?: string
   initialData?: {
     id: string
     name: string
@@ -36,7 +38,7 @@ interface ProductFormProps {
   }
 }
 
-export function ProductForm({ categories, initialData }: ProductFormProps) {
+export function ProductForm({ categories, initialData, apiBase = '/api/products', redirectPath = '/admin/products' }: ProductFormProps) {
   const router = useRouter()
   const isEdit = !!initialData?.id
 
@@ -86,7 +88,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       }),
     }
 
-    const url = isEdit ? `/api/products/${initialData.id}` : '/api/products'
+    const url = isEdit ? `${apiBase}/${initialData.id}` : apiBase
     const method = isEdit ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
@@ -102,7 +104,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
       return
     }
 
-    router.push('/admin/products')
+    router.push(redirectPath)
     router.refresh()
   }
 
@@ -299,7 +301,7 @@ export function ProductForm({ categories, initialData }: ProductFormProps) {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button variant="outline" onClick={() => router.push('/admin/products')}>Cancel</Button>
+        <Button variant="outline" onClick={() => router.push(redirectPath)}>Cancel</Button>
         <Button isLoading={loading} onClick={submit}>
           {isEdit ? 'Save Changes' : 'Create Product'}
         </Button>

@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { getSetting } from '@/lib/services/settings.service'
-import { getStoreT } from '@/lib/i18n/get-store-lang'
+import { getStoreT, getStoreLang } from '@/lib/i18n/get-store-lang'
+import { t as tc } from '@/lib/i18n/translate-content'
 import { prisma } from '@/lib/db'
 import { Mail, Phone, MapPin, ExternalLink } from 'lucide-react'
 
 export async function StoreFooter() {
-  const [companyName, address, phone, email, categories, t] = await Promise.all([
+  const [companyName, address, phone, email, categories, t, lang] = await Promise.all([
     getSetting('company.name'),
     getSetting('company.address'),
     getSetting('company.phone'),
@@ -14,9 +15,10 @@ export async function StoreFooter() {
       where: { isActive: true, parentId: null },
       orderBy: { name: 'asc' },
       take: 6,
-      select: { name: true, slug: true },
+      select: { name: true, slug: true, meta: true },
     }).catch(() => []),
     getStoreT(),
+    getStoreLang(),
   ])
 
   const name = companyName ?? 'Portal'
@@ -73,7 +75,7 @@ export async function StoreFooter() {
                       href={`/products?category=${cat.slug}`}
                       className="text-sm text-slate-400 hover:text-white transition-colors"
                     >
-                      {cat.name}
+                      {tc(cat.meta, 'name', cat.name, lang)}
                     </Link>
                   </li>
                 ))}

@@ -43,8 +43,25 @@ model Shop {
   customers   Customer[]
   documents   Document[]
   news        ShopNews[]
+  branches    ShopBranch[]
 
   @@map("shops")
+}
+
+// Physical locations of a shop (main branch + additional outlets)
+model ShopBranch {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  phone     String?
+  isMain    Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("shop_branches")
 }
 
 model ShopNews {

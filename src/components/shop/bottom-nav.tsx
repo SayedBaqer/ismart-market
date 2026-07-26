@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Truck, MoreHorizontal, X,
-  Package, Users, FileText, BarChart3, UserPlus, Newspaper,
-  Settings, LogOut, Instagram,
+  Package, Box, Users, FileText, BarChart3, UserPlus, Newspaper,
+  Settings, LogOut, Instagram, Store, KeyRound,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
@@ -23,6 +23,8 @@ const PRIMARY_TABS = (role: string) => [
 ].filter((t) => t.roles.includes(role))
 
 const MORE_ITEMS = (role: string) => [
+  { href: '/shop/profile', label: 'Shop Profile', icon: Store, roles: ['MANAGER'] },
+  { href: '/shop/products', label: 'Products', icon: Box, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/stock', label: 'Stock', icon: Package, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/customers', label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/analytics', label: 'Analytics', icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
@@ -33,6 +35,7 @@ const MORE_ITEMS = (role: string) => [
   { href: '/shop/reports', label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
   { href: '/shop/users', label: 'Staff Users', icon: UserPlus, roles: ['MANAGER'] },
   { href: '/shop/settings', label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
+  { href: '/shop/account', label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
 ].filter((t) => t.roles.includes(role))
 
 export function ShopBottomNav({ role, shopName, pendingCount = 0 }: Props) {
