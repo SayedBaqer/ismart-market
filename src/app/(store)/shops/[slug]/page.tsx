@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { Package, Phone, Mail, MapPin, Newspaper, ChevronRight, Instagram, MessageCircle, Facebook, Music2 } from 'lucide-react'
 import { InstagramFeed } from '@/components/store/instagram-feed'
-import { getStoreT } from '@/lib/i18n/get-store-lang'
-import type { StoreTranslations } from '@/lib/i18n/store'
+import { getStoreT, getStoreLang } from '@/lib/i18n/get-store-lang'
+import { t as tc } from '@/lib/i18n/translate-content'
+import type { StoreTranslations, StoreLang } from '@/lib/i18n/store'
 
 export const revalidate = 60
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function ShopPublicPage({ params }: Props) {
-  const [{ slug }, t] = await Promise.all([params, getStoreT()])
+  const [{ slug }, t, lang] = await Promise.all([params, getStoreT(), getStoreLang()])
 
   const shop = await prisma.shop.findUnique({
     where: { slug, status: 'ACTIVE' },
@@ -28,7 +29,7 @@ export default async function ShopPublicPage({ params }: Props) {
         where: { isActive: true, isHidden: false },
         orderBy: { createdAt: 'desc' },
         take: 20,
-        include: { category: { select: { name: true } } },
+        include: { category: { select: { name: true, meta: true } } },
       },
       news: {
         where: { status: 'PUBLISHED' },
@@ -148,24 +149,30 @@ export default async function ShopPublicPage({ params }: Props) {
           switch (sec.type) {
             case 'top-sellers':
               return topSellers.length > 0 ? (
-                <ProductSection key="top-sellers" title={(sec.config?.title as string) || t.topSellers} emoji="🏆" products={topSellers} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
+                <ProductSection key="top-sellers" title={(sec.config?.title as string) || t.topSellers} emoji="🏆" products={topSellers} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} lang={lang} />
               ) : null
 
             case 'new-arrivals':
               return newArrivals.length > 0 ? (
-                <ProductSection key="new-arrivals" title={(sec.config?.title as string) || t.newArrivals} emoji="✨" products={newArrivals} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
+                <ProductSection key="new-arrivals" title={(sec.config?.title as string) || t.newArrivals} emoji="✨" products={newArrivals} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} lang={lang} />
               ) : null
 
             case 'categories': {
-              const cats = [...new Set(shop.products.map((p) => p.category?.name).filter(Boolean))]
+              const seen = new Map<string, string>()
+              for (const p of shop.products) {
+                if (p.category && !seen.has(p.category.name)) {
+                  seen.set(p.category.name, tc(p.category.meta, 'name', p.category.name, lang))
+                }
+              }
+              const cats = [...seen.entries()]
               return cats.length > 1 ? (
                 <section key="categories">
                   <SectionHeader title={t.shopCategories} emoji="🗂️" />
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {cats.map((c) => (
-                      <Link key={c} href={`/shops/${slug}?category=${encodeURIComponent(c!)}`}
+                    {cats.map(([c, translated]) => (
+                      <Link key={c} href={`/shops/${slug}?category=${encodeURIComponent(c)}`}
                         className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-sm font-medium text-gray-700 hover:border-blue-400 hover:text-blue-700 transition-colors">
-                        {c}
+                        {translated}
                       </Link>
                     ))}
                   </div>
@@ -217,7 +224,7 @@ export default async function ShopPublicPage({ params }: Props) {
 
         {/* All products fallback */}
         {sections.length === 0 && (
-          <ProductSection title={t.allProducts} emoji="📦" products={shop.products} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} />
+          <ProductSection title={t.allProducts} emoji="📦" products={shop.products} fmt={fmt} shopSlug={slug} seeAllLabel={t.seeAllProducts} lang={lang} />
         )}
 
         {igPosts.length > 0 && <InstagramFeed posts={igPosts} />}
@@ -244,14 +251,15 @@ function SectionHeader({ title, emoji }: { title: string; emoji: string }) {
 }
 
 function ProductSection({
-  title, emoji, products, fmt, shopSlug, seeAllLabel,
+  title, emoji, products, fmt, shopSlug, seeAllLabel, lang,
 }: {
   title: string
   emoji: string
-  products: { id: string; slug: string; name: string; price: unknown; images: unknown; category: { name: string } | null }[]
+  products: { id: string; slug: string; name: string; price: unknown; images: unknown; category: { name: string; meta?: unknown } | null }[]
   fmt: (n: number) => string
   shopSlug: string
   seeAllLabel: string
+  lang: StoreLang
 }) {
   return (
     <section>
@@ -281,7 +289,7 @@ function ProductSection({
                 )}
               </div>
               <div className="flex flex-1 flex-col p-3">
-                {p.category && <span className="text-[10px] font-medium uppercase tracking-wider text-blue-500 mb-1">{p.category.name}</span>}
+                {p.category && <span className="text-[10px] font-medium uppercase tracking-wider text-blue-500 mb-1">{tc(p.category.meta, 'name', p.category.name, lang)}</span>}
                 <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug flex-1">{p.name}</p>
                 <p className="mt-2 text-sm font-bold text-blue-700">{fmt(price)}</p>
               </div>

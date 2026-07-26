@@ -3,7 +3,8 @@ import Image from 'next/image'
 import { prisma } from '@/lib/db'
 import { ci } from '@/lib/db-compat'
 import { getSetting } from '@/lib/services/settings.service'
-import { getStoreT } from '@/lib/i18n/get-store-lang'
+import { getStoreT, getStoreLang } from '@/lib/i18n/get-store-lang'
+import { t as tc } from '@/lib/i18n/translate-content'
 import { formatCurrency } from '@/lib/utils'
 import { ShoppingCart, Package } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -23,9 +24,10 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const page = Math.max(1, Number(params.page ?? '1'))
   const skip = (page - 1) * PAGE_SIZE
 
-  const [currency, t] = await Promise.all([
+  const [currency, t, lang] = await Promise.all([
     getSetting('currency.base').then((v) => v ?? 'BHD'),
     getStoreT(),
+    getStoreLang(),
   ])
 
   let categoryId: string | undefined
@@ -53,7 +55,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       take: PAGE_SIZE,
       skip,
       orderBy: { createdAt: 'desc' },
-      include: { category: { select: { name: true, slug: true } } },
+      include: { category: { select: { name: true, slug: true, meta: true } } },
     }),
     prisma.product.count({ where }),
     prisma.category.findMany({
@@ -112,7 +114,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           >
             {t.allCategories}
           </Link>
-          {categories.map((cat: { id: string; name: string; slug: string }) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               href={buildUrl({ category: cat.slug, page: undefined })}
@@ -122,7 +124,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {cat.name}
+              {tc(cat.meta, 'name', cat.name, lang)}
             </Link>
           ))}
         </div>
@@ -144,13 +146,13 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                     {t.allCategories}
                   </Link>
                 </li>
-                {categories.map((cat: { id: string; name: string; slug: string }) => (
+                {categories.map((cat) => (
                   <li key={cat.id}>
                     <Link href={buildUrl({ category: cat.slug, page: undefined })}
                       className={`block rounded-xl px-3 py-2 text-sm transition-colors ${
                         categorySlug === cat.slug ? 'bg-blue-50 font-semibold text-blue-700' : 'text-gray-600 hover:bg-gray-50'
                       }`}>
-                      {cat.name}
+                      {tc(cat.meta, 'name', cat.name, lang)}
                     </Link>
                   </li>
                 ))}
@@ -200,7 +202,9 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                       </div>
                       <div className="flex flex-1 flex-col gap-1 p-3">
                         {product.category && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-500">{product.category.name}</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-500">
+                            {tc(product.category.meta, 'name', product.category.name, lang)}
+                          </span>
                         )}
                         <p className="line-clamp-2 text-sm font-semibold text-gray-900 leading-snug flex-1">{product.name}</p>
                         <p className="mt-auto text-sm font-bold text-blue-700">
