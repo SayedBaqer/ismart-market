@@ -6,6 +6,7 @@ import {
   AlertTriangle, TrendingDown, Globe, PlusCircle, MinusCircle, ListChecks, Boxes,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface StockRow {
   id: string
@@ -19,6 +20,7 @@ interface StockRow {
 }
 
 export default function ShopStockPage() {
+  const t = useShopT()
   const [rows, setRows] = useState<StockRow[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
@@ -88,7 +90,7 @@ export default function ShopStockPage() {
 
   async function applyAdjust(productId: string) {
     const qty = parseFloat(adjustQty)
-    if (!qty || qty <= 0) { setAdjustError('Enter a valid quantity'); return }
+    if (!qty || qty <= 0) { setAdjustError(t.stkInvalidQty); return }
     setAdjustBusy(true)
     setAdjustError('')
     const res = await fetch('/api/shop/stock/adjust', {
@@ -103,7 +105,7 @@ export default function ShopStockPage() {
     })
     if (!res.ok) {
       const d = await res.json()
-      setAdjustError(d.error ?? 'Failed to adjust stock')
+      setAdjustError(d.error ?? t.stkAdjustFailed)
       setAdjustBusy(false)
       return
     }
@@ -124,11 +126,11 @@ export default function ShopStockPage() {
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Stock & Prices</h1>
-            <p className="text-xs text-gray-400">Edit sales prices inline, then tap Save</p>
+            <h1 className="text-lg font-bold text-gray-900">{t.stkTitle}</h1>
+            <p className="text-xs text-gray-400">{t.stkSubtitle}</p>
           </div>
           <div className="flex items-center gap-2">
-            {saved && <span className="text-sm font-semibold text-emerald-600">Saved!</span>}
+            {saved && <span className="text-sm font-semibold text-emerald-600">{t.stkSaved}</span>}
             <button
               type="button"
               onClick={savePrices}
@@ -140,7 +142,7 @@ export default function ShopStockPage() {
               } disabled:opacity-60`}
             >
               <Save className="h-4 w-4" />
-              {saving ? 'Saving…' : dirtyCount > 0 ? `Save (${dirtyCount})` : 'Save'}
+              {saving ? t.stkSaving : dirtyCount > 0 ? t.stkSaveCount.replace('{count}', String(dirtyCount)) : t.stkSave}
             </button>
           </div>
         </div>
@@ -151,15 +153,15 @@ export default function ShopStockPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl bg-blue-600 p-3 text-white">
             <p className="text-2xl font-bold">{rows.length}</p>
-            <p className="text-xs text-blue-200 mt-0.5">Products</p>
+            <p className="text-xs text-blue-200 mt-0.5">{t.stkProducts}</p>
           </div>
           <div className={`rounded-2xl p-3 ${lowCount > 0 ? 'bg-amber-500 text-white' : 'bg-white border border-gray-100'}`}>
             <p className={`text-2xl font-bold ${lowCount > 0 ? 'text-white' : 'text-amber-500'}`}>{lowCount}</p>
-            <p className={`text-xs mt-0.5 ${lowCount > 0 ? 'text-amber-100' : 'text-gray-400'}`}>Low Stock</p>
+            <p className={`text-xs mt-0.5 ${lowCount > 0 ? 'text-amber-100' : 'text-gray-400'}`}>{t.stkLowStock}</p>
           </div>
           <div className={`rounded-2xl p-3 ${outCount > 0 ? 'bg-red-500 text-white' : 'bg-white border border-gray-100'}`}>
             <p className={`text-2xl font-bold ${outCount > 0 ? 'text-white' : 'text-red-400'}`}>{outCount}</p>
-            <p className={`text-xs mt-0.5 ${outCount > 0 ? 'text-red-100' : 'text-gray-400'}`}>Out of Stock</p>
+            <p className={`text-xs mt-0.5 ${outCount > 0 ? 'text-red-100' : 'text-gray-400'}`}>{t.stkOutOfStock}</p>
           </div>
         </div>
 
@@ -169,7 +171,7 @@ export default function ShopStockPage() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search product or SKU…"
+            placeholder={t.stkSearchPlaceholder}
             className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
           />
         </div>
@@ -178,7 +180,7 @@ export default function ShopStockPage() {
         {dirtyCount > 0 && (
           <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
             <Tag className="h-4 w-4 shrink-0" />
-            <span><strong>{dirtyCount}</strong> price{dirtyCount !== 1 ? 's' : ''} changed — tap Save to apply</span>
+            <span><strong>{dirtyCount}</strong> {dirtyCount !== 1 ? t.stkPricesChanged : t.stkPriceChanged}</span>
           </div>
         )}
 
@@ -186,13 +188,13 @@ export default function ShopStockPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             <RefreshCw className="h-8 w-8 animate-spin mb-3" />
-            <p className="text-sm">Loading stock…</p>
+            <p className="text-sm">{t.stkLoadingStock}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             <Package className="h-12 w-12 mb-3 text-gray-200" />
-            <p className="text-sm font-semibold text-gray-500">No products found</p>
-            <p className="text-xs mt-1">Add products with stock tracking enabled</p>
+            <p className="text-sm font-semibold text-gray-500">{t.stkNoProducts}</p>
+            <p className="text-xs mt-1">{t.stkNoProductsHint}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -224,21 +226,21 @@ export default function ShopStockPage() {
                       isOut ? 'bg-red-100 text-red-700' : isLow ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
                     }`}>
                       {isOut ? <TrendingDown className="h-3 w-3" /> : isLow ? <AlertTriangle className="h-3 w-3" /> : null}
-                      {isOut ? 'Out' : isLow ? 'Low' : 'In Stock'}
+                      {isOut ? t.stkOut : isLow ? t.stkLow : t.stkInStock}
                     </span>
                   </div>
 
                   {/* Stats row */}
                   <div className="flex items-end gap-4 mb-3 text-sm">
                     <div>
-                      <p className="text-xs text-gray-400">Qty</p>
+                      <p className="text-xs text-gray-400">{t.stkQty}</p>
                       <p className={`text-lg font-bold tabular-nums ${isOut ? 'text-red-500' : isLow ? 'text-amber-600' : 'text-gray-800'}`}>
                         {row.currentQty}
                         {row.threshold != null && <span className="text-xs font-normal text-gray-400 ml-1">/{row.threshold}</span>}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Avg Cost</p>
+                      <p className="text-xs text-gray-400">{t.stkAvgCost}</p>
                       <p className="text-sm font-semibold text-gray-700 tabular-nums">
                         {row.avgCostBhd > 0 ? `${row.avgCostBhd.toFixed(3)} BHD` : '—'}
                       </p>
@@ -248,7 +250,7 @@ export default function ShopStockPage() {
                       onClick={() => openAdjust(row.id)}
                       className="ml-auto flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
                     >
-                      <Boxes className="h-3.5 w-3.5" /> Adjust Stock
+                      <Boxes className="h-3.5 w-3.5" /> {t.stkAdjustStock}
                     </button>
                   </div>
 
@@ -258,9 +260,9 @@ export default function ShopStockPage() {
                       {adjustError && <p className="text-xs text-red-600">{adjustError}</p>}
                       <div className="grid grid-cols-3 gap-1.5">
                         {([
-                          { mode: 'add' as const, label: 'Add', icon: PlusCircle },
-                          { mode: 'remove' as const, label: 'Remove', icon: MinusCircle },
-                          { mode: 'set' as const, label: 'Set exact', icon: ListChecks },
+                          { mode: 'add' as const, label: t.stkAdd, icon: PlusCircle },
+                          { mode: 'remove' as const, label: t.stkRemove, icon: MinusCircle },
+                          { mode: 'set' as const, label: t.stkSetExact, icon: ListChecks },
                         ]).map(({ mode, label, icon: Icon }) => (
                           <button
                             key={mode}
@@ -280,7 +282,7 @@ export default function ShopStockPage() {
                           min={0}
                           value={adjustQty}
                           onChange={(e) => setAdjustQty(e.target.value)}
-                          placeholder={adjustMode === 'set' ? 'New total quantity' : 'Quantity'}
+                          placeholder={adjustMode === 'set' ? t.stkNewTotalQty : t.stkQuantity}
                           className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                         />
                         {adjustMode === 'add' && (
@@ -290,7 +292,7 @@ export default function ShopStockPage() {
                             step={0.001}
                             value={adjustCost}
                             onChange={(e) => setAdjustCost(e.target.value)}
-                            placeholder="Unit cost (optional)"
+                            placeholder={t.stkUnitCostOptional}
                             className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                           />
                         )}
@@ -301,7 +303,7 @@ export default function ShopStockPage() {
                         disabled={adjustBusy}
                         className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                       >
-                        {adjustBusy ? 'Applying…' : 'Apply'}
+                        {adjustBusy ? t.stkApplying : t.stkApply}
                       </button>
                     </div>
                   )}
@@ -310,14 +312,14 @@ export default function ShopStockPage() {
                   <div className="mb-3">
                     <Link href={`/shop/stock/translate/${row.id}`}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                      <Globe className="h-3 w-3" /> Add Arabic translation
+                      <Globe className="h-3 w-3" /> {t.stkAddArabicTranslation}
                     </Link>
                   </div>
 
                   {/* Price inputs */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Sales Price (BHD)</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">{t.stkSalesPrice}</label>
                       <input
                         type="number"
                         min={0}
@@ -331,7 +333,7 @@ export default function ShopStockPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Compare Price (optional)</label>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">{t.stkComparePrice}</label>
                       <input
                         type="number"
                         min={0}

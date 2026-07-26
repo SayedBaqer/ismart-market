@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Users, Search, Plus, Phone, Mail, ShoppingCart, X, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface Customer {
   id: string
@@ -15,6 +16,7 @@ interface Customer {
 }
 
 export default function ShopCustomersPage() {
+  const t = useShopT()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -48,7 +50,7 @@ export default function ShopCustomersPage() {
 
   async function addCustomer() {
     if (!form.displayName.trim() || !form.mobile.trim()) {
-      setError('Name and mobile are required')
+      setError(t.custNameMobileRequired)
       return
     }
     setSaving(true)
@@ -64,7 +66,7 @@ export default function ShopCustomersPage() {
       await load()
     } else {
       const data = await res.json()
-      setError(data.error ?? 'Failed to save')
+      setError(data.error ?? t.custSaveFailed)
     }
     setSaving(false)
   }
@@ -76,8 +78,8 @@ export default function ShopCustomersPage() {
         <div className="flex items-center gap-3">
           <Users className="h-5 w-5 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Customers</h1>
-            <p className="text-xs text-gray-500">{total} customers in your shop</p>
+            <h1 className="text-xl font-bold text-gray-900">{t.custTitle}</h1>
+            <p className="text-xs text-gray-500">{t.custCountInShop.replace('{count}', String(total))}</p>
           </div>
         </div>
         <button
@@ -86,7 +88,7 @@ export default function ShopCustomersPage() {
           className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
-          Add Customer
+          {t.custAddCustomer}
         </button>
       </div>
 
@@ -94,17 +96,17 @@ export default function ShopCustomersPage() {
       {showForm && (
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-blue-900">New Customer</h2>
+            <h2 className="text-sm font-bold text-blue-900">{t.custNewCustomer}</h2>
             <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { key: 'displayName', label: 'Full Name *', placeholder: 'John Doe' },
-              { key: 'mobile', label: 'Mobile *', placeholder: '+973 3X XXX XXX' },
-              { key: 'email', label: 'Email', placeholder: 'john@example.com' },
-              { key: 'phone', label: 'Alt Phone', placeholder: '+973 1X XXX XXX' },
-              { key: 'billingAddress', label: 'Address', placeholder: 'Building, Road, Block, City' },
-              { key: 'notes', label: 'Notes', placeholder: 'Any notes about this customer' },
+              { key: 'displayName', label: t.custFullName, placeholder: 'John Doe' },
+              { key: 'mobile', label: t.custMobile, placeholder: '+973 3X XXX XXX' },
+              { key: 'email', label: t.custEmail, placeholder: 'john@example.com' },
+              { key: 'phone', label: t.custAltPhone, placeholder: '+973 1X XXX XXX' },
+              { key: 'billingAddress', label: t.custAddress, placeholder: 'Building, Road, Block, City' },
+              { key: 'notes', label: t.custNotes, placeholder: t.custNotesPlaceholder },
             ].map(({ key, label, placeholder }) => (
               <div key={key}>
                 <label className="text-xs font-semibold text-gray-600">{label}</label>
@@ -121,10 +123,10 @@ export default function ShopCustomersPage() {
           <div className="flex gap-2">
             <button type="button" onClick={addCustomer} disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
-              {saving ? 'Saving…' : 'Save Customer'}
+              {saving ? t.custSaving : t.custSaveCustomer}
             </button>
             <button type="button" onClick={() => setShowForm(false)} className="text-sm text-gray-500 hover:text-gray-700 px-3">
-              Cancel
+              {t.custCancel}
             </button>
           </div>
         </div>
@@ -137,7 +139,7 @@ export default function ShopCustomersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, mobile or email…"
+            placeholder={t.custSearchPlaceholder}
             className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </div>
@@ -154,10 +156,10 @@ export default function ShopCustomersPage() {
       ) : customers.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
           <Users className="h-10 w-10 text-gray-300 mb-3" />
-          <p className="text-sm font-semibold text-gray-500">{search ? 'No customers match your search' : 'No customers yet'}</p>
+          <p className="text-sm font-semibold text-gray-500">{search ? t.custNoMatch : t.custNoneYet}</p>
           {!search && (
             <button type="button" onClick={() => setShowForm(true)} className="mt-4 flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-              <Plus className="h-4 w-4" /> Add Customer
+              <Plus className="h-4 w-4" /> {t.custAddCustomer}
             </button>
           )}
         </div>
@@ -178,7 +180,7 @@ export default function ShopCustomersPage() {
               <div className="shrink-0 text-right">
                 <span className="flex items-center gap-1 text-xs text-gray-500">
                   <ShoppingCart className="h-3 w-3" />
-                  {c._count.orders} order{c._count.orders !== 1 ? 's' : ''}
+                  {c._count.orders} {c._count.orders !== 1 ? t.custOrders : t.custOrder}
                 </span>
                 <span className="text-[10px] text-gray-300">
                   {new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -196,7 +198,7 @@ export default function ShopCustomersPage() {
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+          <span className="text-sm text-gray-600">{t.custPageOf.replace('{page}', String(page)).replace('{total}', String(totalPages))}</span>
           <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
             <ChevronRight className="h-4 w-4" />
