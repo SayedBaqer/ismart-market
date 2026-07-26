@@ -76,6 +76,7 @@ export const roleCapabilities: Record<UserRole, Capability[]> = {
     'reports.view', 'reports.financial',
     'users.view', 'users.create', 'users.edit',
     'settings.view', 'settings.edit',
+    'plugins.manage',
     'news.view', 'news.create', 'news.edit', 'news.delete',
   ],
   MANAGER: [
