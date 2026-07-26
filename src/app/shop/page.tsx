@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { ShoppingCart, Package, Users, Truck, TrendingUp, Clock, CheckCircle, AlertCircle, Box, Store, AlertOctagon } from 'lucide-react'
+import { getStoreLang } from '@/lib/i18n/get-store-lang'
+import { shopT } from '@/lib/i18n/shop'
 
 export default async function ShopDashboard() {
   const session = await auth()
@@ -17,6 +19,8 @@ export default async function ShopDashboard() {
 
   const shopId = shopUser.shop.id
   const role = shopUser.role
+  const lang = await getStoreLang()
+  const t = shopT[lang]
 
   const [orderCounts, recentOrders, stockAlerts, customerCount] = await Promise.all([
     prisma.order.groupBy({
@@ -55,13 +59,13 @@ export default async function ShopDashboard() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 pb-20 md:pb-6">
+    <div className="p-4 md:p-6 space-y-6 pb-20 md:pb-6" dir={t.dir}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          {role === 'CASHIER' ? 'My Deliveries' : 'Shop Dashboard'}
+          {role === 'CASHIER' ? t.dashTitleDeliveries : t.dashTitleShop}
         </h1>
-        <p className="text-sm text-gray-500">{shopUser.shop.name} · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        <p className="text-sm text-gray-500">{shopUser.shop.name} · {new Date().toLocaleDateString(lang === 'ar' ? 'ar' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
       </div>
 
       {/* Billing status banner — non-payment downgrades to Free-tier limits/features rather than blocking orders */}
@@ -69,11 +73,8 @@ export default async function ShopDashboard() {
         <div className="flex items-start gap-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-3.5">
           <AlertOctagon className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-red-800">Account downgraded to Free plan</p>
-            <p className="text-xs text-red-600 mt-0.5">
-              Your subscription is unpaid, so your shop is temporarily limited to Free-plan features and order limits.
-              Orders still come through — settle your subscription to restore your full plan.
-            </p>
+            <p className="text-sm font-bold text-red-800">{t.dashOrdersSuspendedTitle}</p>
+            <p className="text-xs text-red-600 mt-0.5">{t.dashOrdersSuspendedBody}</p>
           </div>
         </div>
       )}
@@ -81,11 +82,11 @@ export default async function ShopDashboard() {
         <div className="flex items-start gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3.5">
           <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-amber-800">Subscription payment due</p>
+            <p className="text-sm font-bold text-amber-800">{t.dashPaymentDueTitle}</p>
             <p className="text-xs text-amber-600 mt-0.5">
               {shopUser.shop.paymentDueDate
-                ? `Please settle your subscription by ${new Date(shopUser.shop.paymentDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} — your plan features will be limited to Free tier until then.`
-                : 'Please settle your subscription — your plan features are limited to Free tier until then.'}
+                ? `${lang === 'ar' ? 'يرجى تسوية اشتراكك بحلول' : 'Please settle your subscription by'} ${new Date(shopUser.shop.paymentDueDate).toLocaleDateString(lang === 'ar' ? 'ar' : 'en-GB', { day: 'numeric', month: 'long' })}.`
+                : (lang === 'ar' ? 'يرجى تسوية اشتراكك.' : 'Please settle your subscription.')}
             </p>
           </div>
         </div>
@@ -96,25 +97,25 @@ export default async function ShopDashboard() {
         <Link href="/shop/orders" className="rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white shadow-sm hover:shadow-md transition-shadow">
           <ShoppingCart className="h-6 w-6 text-blue-200 mb-2" />
           <p className="text-3xl font-bold">{totalOrders}</p>
-          <p className="text-xs text-blue-200 mt-0.5">Total Orders</p>
+          <p className="text-xs text-blue-200 mt-0.5">{t.dashTotalOrders}</p>
         </Link>
 
         <Link href="/shop/orders?status=PENDING" className="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 p-4 text-white shadow-sm hover:shadow-md transition-shadow">
           <Clock className="h-6 w-6 text-amber-100 mb-2" />
           <p className="text-3xl font-bold">{pendingCount}</p>
-          <p className="text-xs text-amber-100 mt-0.5">Pending</p>
+          <p className="text-xs text-amber-100 mt-0.5">{t.dashPending}</p>
         </Link>
 
         <Link href="/shop/delivery" className="rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 p-4 text-white shadow-sm hover:shadow-md transition-shadow">
           <Truck className="h-6 w-6 text-purple-200 mb-2" />
           <p className="text-3xl font-bold">{orderCounts.find((r) => r.status === 'SHIPPED')?._count ?? 0}</p>
-          <p className="text-xs text-purple-200 mt-0.5">In Delivery</p>
+          <p className="text-xs text-purple-200 mt-0.5">{t.dashInDelivery}</p>
         </Link>
 
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 text-white shadow-sm">
           <CheckCircle className="h-6 w-6 text-emerald-200 mb-2" />
           <p className="text-3xl font-bold">{completedCount}</p>
-          <p className="text-xs text-emerald-200 mt-0.5">Completed</p>
+          <p className="text-xs text-emerald-200 mt-0.5">{t.dashCompleted}</p>
         </div>
       </div>
 
@@ -126,8 +127,8 @@ export default async function ShopDashboard() {
               <ShoppingCart className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">New Order</p>
-              <p className="text-xs text-gray-400">Create sale</p>
+              <p className="text-sm font-semibold text-gray-900">{t.dashNewOrder}</p>
+              <p className="text-xs text-gray-400">{t.dashCreateSale}</p>
             </div>
           </Link>
         )}
@@ -136,8 +137,8 @@ export default async function ShopDashboard() {
             <Truck className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Delivery</p>
-            <p className="text-xs text-gray-400">Assign & track</p>
+            <p className="text-sm font-semibold text-gray-900">{t.navDelivery}</p>
+            <p className="text-xs text-gray-400">{t.dashDeliveryAssignTrack}</p>
           </div>
         </Link>
         {role !== 'CASHIER' && (
@@ -147,8 +148,8 @@ export default async function ShopDashboard() {
                 <Users className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">{customerCount} Customers</p>
-                <p className="text-xs text-gray-400">View all</p>
+                <p className="text-sm font-semibold text-gray-900">{customerCount} {t.navCustomers}</p>
+                <p className="text-xs text-gray-400">{t.dashCustomersViewAll}</p>
               </div>
             </Link>
             <Link href="/shop/stock" className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all">
@@ -156,9 +157,9 @@ export default async function ShopDashboard() {
                 <Package className={`h-5 w-5 ${lowStock.length > 0 ? 'text-red-600' : 'text-gray-500'}`} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Stock</p>
+                <p className="text-sm font-semibold text-gray-900">{t.dashStock}</p>
                 <p className={`text-xs ${lowStock.length > 0 ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                  {lowStock.length > 0 ? `${lowStock.length} low stock alerts` : 'All stocked'}
+                  {lowStock.length > 0 ? `${lowStock.length} ${t.dashLowStockAlerts}` : t.dashAllStocked}
                 </p>
               </div>
             </Link>
@@ -167,8 +168,8 @@ export default async function ShopDashboard() {
                 <Box className="h-5 w-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">Products</p>
-                <p className="text-xs text-gray-400">Add & manage listings</p>
+                <p className="text-sm font-semibold text-gray-900">{t.dashProducts}</p>
+                <p className="text-xs text-gray-400">{t.dashAddManageListings}</p>
               </div>
             </Link>
           </>
@@ -179,8 +180,8 @@ export default async function ShopDashboard() {
               <Store className="h-5 w-5 text-teal-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">Shop Settings</p>
-              <p className="text-xs text-gray-400">Name, branches & page layout</p>
+              <p className="text-sm font-semibold text-gray-900">{t.dashShopSettings}</p>
+              <p className="text-xs text-gray-400">{t.dashShopSettingsSub}</p>
             </div>
           </Link>
         )}
@@ -191,13 +192,13 @@ export default async function ShopDashboard() {
         <div className="rounded-2xl bg-red-50 border border-red-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="h-4 w-4 text-red-600" />
-            <p className="text-sm font-semibold text-red-800">Low Stock Alerts ({lowStock.length})</p>
+            <p className="text-sm font-semibold text-red-800">{t.dashLowStockAlertsTitle} ({lowStock.length})</p>
           </div>
           <div className="space-y-2">
             {lowStock.slice(0, 4).map((s, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
                 <span className="text-red-700 truncate max-w-[200px]">{s.product.name}</span>
-                <span className="font-bold text-red-600 shrink-0 ml-2">{s.currentQty} left</span>
+                <span className="font-bold text-red-600 shrink-0 ml-2">{s.currentQty} {t.dashLeft}</span>
               </div>
             ))}
           </div>
@@ -207,12 +208,12 @@ export default async function ShopDashboard() {
       {/* Recent orders */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-900">Recent Orders</h2>
-          <Link href="/shop/orders" className="text-xs text-blue-600 font-medium">View all →</Link>
+          <h2 className="text-sm font-semibold text-gray-900">{t.dashRecentOrders}</h2>
+          <Link href="/shop/orders" className="text-xs text-blue-600 font-medium">{t.dashViewAll} →</Link>
         </div>
         <div className="space-y-2">
           {recentOrders.length === 0 ? (
-            <div className="rounded-2xl bg-white border border-gray-100 p-6 text-center text-sm text-gray-400">No orders yet</div>
+            <div className="rounded-2xl bg-white border border-gray-100 p-6 text-center text-sm text-gray-400">{t.dashNoOrdersYet}</div>
           ) : recentOrders.map((order) => (
             <Link
               key={order.id}
@@ -226,7 +227,7 @@ export default async function ShopDashboard() {
                     {order.status}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{order.customer?.displayName ?? order.customerName ?? 'Guest'}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{order.customer?.displayName ?? order.customerName ?? t.dashGuest}</p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-bold text-gray-900">{formatCurrency(Number(order.grandTotal), order.currency)}</p>

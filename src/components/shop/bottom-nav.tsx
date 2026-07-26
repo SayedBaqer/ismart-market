@@ -1,16 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Truck, MoreHorizontal, X,
   Package, Box, Users, FileText, BarChart3, UserPlus, Newspaper,
-  Settings, LogOut, Puzzle, Store, KeyRound, Globe2, Lock, PowerOff,
+  Settings, LogOut, Puzzle, Store, KeyRound, Globe2, Lock, PowerOff, Languages,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { PLUGIN_ROUTES } from '@/lib/plugin-routes'
 import { PLUGIN_ICONS, type ShopPluginStatus } from '@/components/shop/plugin-icons'
+import { shopT, type ShopTranslations } from '@/lib/i18n/shop'
+import type { StoreLang } from '@/lib/i18n/store'
 
 interface Props {
   role: string
@@ -18,38 +20,47 @@ interface Props {
   shopSlug: string
   pendingCount?: number
   plugins?: ShopPluginStatus[]
+  lang: StoreLang
 }
 
-const PRIMARY_TABS = (role: string) => [
-  { href: '/shop', label: 'Home', icon: LayoutDashboard, exact: true, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
-  { href: '/shop/orders', label: 'Orders', icon: ShoppingCart, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
-  { href: '/shop/delivery', label: 'Delivery', icon: Truck, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
-].filter((t) => t.roles.includes(role))
+const PRIMARY_TABS = (role: string, t: ShopTranslations) => [
+  { href: '/shop', label: t.navHome, icon: LayoutDashboard, exact: true, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
+  { href: '/shop/orders', label: t.navOrders, icon: ShoppingCart, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
+  { href: '/shop/delivery', label: t.navDelivery, icon: Truck, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
+].filter((tab) => tab.roles.includes(role))
 
-const MORE_ITEMS = (role: string) => [
-  { href: '/shop/profile', label: 'Shop Profile', icon: Store, roles: ['MANAGER'] },
-  { href: '/shop/products', label: 'Products', icon: Box, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/stock', label: 'Stock', icon: Package, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/customers', label: 'Customers', icon: Users, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/analytics', label: 'Analytics', icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/billing', label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/news', label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/reports', label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
-  { href: '/shop/users', label: 'Staff Users', icon: UserPlus, roles: ['MANAGER'] },
-  { href: '/shop/settings', label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
-  { href: '/shop/account', label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
-].filter((t) => t.roles.includes(role))
+const MORE_ITEMS = (role: string, t: ShopTranslations) => [
+  { href: '/shop/profile', label: t.navShopProfile, icon: Store, roles: ['MANAGER'] },
+  { href: '/shop/products', label: t.navProducts, icon: Box, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/stock', label: t.navStock, icon: Package, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/customers', label: t.navCustomers, icon: Users, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/analytics', label: t.navAnalytics, icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/billing', label: t.navDocuments, icon: FileText, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/news', label: t.navNews, icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
+  { href: '/shop/reports', label: t.navReports, icon: BarChart3, roles: ['MANAGER'] },
+  { href: '/shop/users', label: t.navStaffUsers, icon: UserPlus, roles: ['MANAGER'] },
+  { href: '/shop/settings', label: t.navPageBuilder, icon: Settings, roles: ['MANAGER'] },
+  { href: '/shop/account', label: t.navMyAccount, icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
+].filter((item) => item.roles.includes(role))
 
-export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plugins = [] }: Props) {
+export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plugins = [], lang }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
   const [showMore, setShowMore] = useState(false)
-  const primaryTabs = PRIMARY_TABS(role)
-  const moreItems = MORE_ITEMS(role)
+  const t = shopT[lang]
+  const primaryTabs = PRIMARY_TABS(role, t)
+  const moreItems = MORE_ITEMS(role, t)
   const showPlugins = role === 'MANAGER' && plugins.length > 0
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href
     return pathname.startsWith(href)
+  }
+
+  function toggleLang() {
+    const next = lang === 'en' ? 'ar' : 'en'
+    document.cookie = `store_lang=${next}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+    router.refresh()
   }
 
   return (
@@ -68,12 +79,18 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plug
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
               <div>
                 <p className="font-bold text-gray-900">{shopName}</p>
-                <p className="text-xs text-gray-400">More options</p>
+                <p className="text-xs text-gray-400">{t.navMoreOptions}</p>
               </div>
-              <button type="button" onClick={() => setShowMore(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={toggleLang}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                  <Languages className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => setShowMore(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             {/* Grid of items */}
@@ -115,7 +132,7 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plug
                   <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${isActive('/shop/plugins') ? 'bg-blue-600 shadow-md shadow-blue-200' : 'bg-gray-100'}`}>
                     <Puzzle className={`h-5 w-5 ${isActive('/shop/plugins') ? 'text-white' : 'text-gray-600'}`} />
                   </div>
-                  <span className={`text-[11px] font-semibold text-center leading-tight ${isActive('/shop/plugins') ? 'text-blue-700' : 'text-gray-600'}`}>Manage Plugins</span>
+                  <span className={`text-[11px] font-semibold text-center leading-tight ${isActive('/shop/plugins') ? 'text-blue-700' : 'text-gray-600'}`}>{t.navManagePlugins}</span>
                 </Link>
               )}
             </div>
@@ -125,17 +142,17 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plug
               <a href={`/shops/${shopSlug}`} target="_blank" rel="noopener noreferrer"
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
                 <Store className="h-4 w-4" />
-                <span className="text-sm font-semibold">View My Shop Page</span>
+                <span className="text-sm font-semibold">{t.navViewShopPage}</span>
               </a>
               <a href="/" target="_blank" rel="noopener noreferrer"
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
                 <Globe2 className="h-4 w-4" />
-                <span className="text-sm font-semibold">View Platform Home</span>
+                <span className="text-sm font-semibold">{t.navViewPlatformHome}</span>
               </a>
               <button type="button" onClick={() => signOut({ callbackUrl: '/admin/login' })}
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-red-600 hover:bg-red-50 transition-colors">
                 <LogOut className="h-4 w-4" />
-                <span className="text-sm font-semibold">Sign Out</span>
+                <span className="text-sm font-semibold">{t.navSignOut}</span>
               </button>
             </div>
           </div>
@@ -155,7 +172,7 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plug
                   className={`flex flex-1 flex-col items-center gap-1 py-2.5 transition-all ${active ? 'text-blue-600' : 'text-gray-400 active:text-blue-400'}`}>
                   <div className={`relative flex h-7 w-7 items-center justify-center rounded-xl transition-all ${active ? 'bg-blue-100' : ''}`}>
                     <Icon className="h-5 w-5" />
-                    {label === 'Orders' && pendingCount > 0 && (
+                    {href === '/shop/orders' && pendingCount > 0 && (
                       <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
                         {pendingCount > 9 ? '9+' : pendingCount}
                       </span>
@@ -173,7 +190,7 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plug
                 <div className={`flex h-7 w-7 items-center justify-center rounded-xl ${showMore ? 'bg-blue-100' : ''}`}>
                   <MoreHorizontal className="h-5 w-5" />
                 </div>
-                <span className="text-[10px] font-semibold">More</span>
+                <span className="text-[10px] font-semibold">{t.navMore}</span>
               </button>
             )}
           </div>
