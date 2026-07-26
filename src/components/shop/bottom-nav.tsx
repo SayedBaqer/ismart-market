@@ -6,15 +6,18 @@ import { useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Truck, MoreHorizontal, X,
   Package, Box, Users, FileText, BarChart3, UserPlus, Newspaper,
-  Settings, LogOut, Puzzle, Store, KeyRound, Globe2,
+  Settings, LogOut, Puzzle, Store, KeyRound, Globe2, Lock, PowerOff,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import { PLUGIN_ROUTES } from '@/lib/plugin-routes'
+import { PLUGIN_ICONS, type ShopPluginStatus } from '@/components/shop/plugin-icons'
 
 interface Props {
   role: string
   shopName: string
   shopSlug: string
   pendingCount?: number
+  plugins?: ShopPluginStatus[]
 }
 
 const PRIMARY_TABS = (role: string) => [
@@ -31,18 +34,18 @@ const MORE_ITEMS = (role: string) => [
   { href: '/shop/analytics', label: 'Analytics', icon: BarChart3, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/billing', label: 'Documents', icon: FileText, roles: ['MANAGER', 'STAFF'] },
   { href: '/shop/news', label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
-  { href: '/shop/plugins', label: 'Plugins', icon: Puzzle, roles: ['MANAGER'] },
   { href: '/shop/reports', label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
   { href: '/shop/users', label: 'Staff Users', icon: UserPlus, roles: ['MANAGER'] },
   { href: '/shop/settings', label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
   { href: '/shop/account', label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
 ].filter((t) => t.roles.includes(role))
 
-export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0 }: Props) {
+export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0, plugins = [] }: Props) {
   const pathname = usePathname()
   const [showMore, setShowMore] = useState(false)
   const primaryTabs = PRIMARY_TABS(role)
   const moreItems = MORE_ITEMS(role)
+  const showPlugins = role === 'MANAGER' && plugins.length > 0
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href
@@ -87,6 +90,34 @@ export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0 }: Pr
                   </Link>
                 )
               })}
+
+              {/* Individual plugins — greyed if locked (plan too low) or turned off */}
+              {showPlugins && plugins.map((plugin) => {
+                const Icon = (plugin.icon && PLUGIN_ICONS[plugin.icon]) || Puzzle
+                const dimmed = plugin.locked || !plugin.enabled
+                const href = dimmed ? '/shop/plugins' : (PLUGIN_ROUTES[plugin.slug] ?? '/shop/plugins')
+                const active = !dimmed && isActive(PLUGIN_ROUTES[plugin.slug] ?? '\0')
+                return (
+                  <Link key={plugin.slug} href={href} onClick={() => setShowMore(false)}
+                    className={`relative flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 transition-colors ${active ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                    <div className={`relative flex h-11 w-11 items-center justify-center rounded-2xl ${active ? 'bg-blue-600 shadow-md shadow-blue-200' : dimmed ? 'bg-gray-100' : 'bg-gray-100'}`}>
+                      <Icon className={`h-5 w-5 ${active ? 'text-white' : dimmed ? 'text-gray-300' : 'text-gray-600'}`} />
+                      {plugin.locked && <Lock className="absolute -right-1 -bottom-1 h-3.5 w-3.5 text-gray-400 bg-white rounded-full p-0.5" />}
+                      {!plugin.locked && !plugin.enabled && <PowerOff className="absolute -right-1 -bottom-1 h-3.5 w-3.5 text-gray-400 bg-white rounded-full p-0.5" />}
+                    </div>
+                    <span className={`text-[11px] font-semibold text-center leading-tight ${active ? 'text-blue-700' : dimmed ? 'text-gray-400' : 'text-gray-600'}`}>{plugin.name}</span>
+                  </Link>
+                )
+              })}
+              {showPlugins && (
+                <Link href="/shop/plugins" onClick={() => setShowMore(false)}
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 transition-colors ${isActive('/shop/plugins') ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${isActive('/shop/plugins') ? 'bg-blue-600 shadow-md shadow-blue-200' : 'bg-gray-100'}`}>
+                    <Puzzle className={`h-5 w-5 ${isActive('/shop/plugins') ? 'text-white' : 'text-gray-600'}`} />
+                  </div>
+                  <span className={`text-[11px] font-semibold text-center leading-tight ${isActive('/shop/plugins') ? 'text-blue-700' : 'text-gray-600'}`}>Manage Plugins</span>
+                </Link>
+              )}
             </div>
 
             {/* Platform links + sign out */}

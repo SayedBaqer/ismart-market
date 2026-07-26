@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import type { ShopPlan } from '@prisma/client'
+import { getEffectivePlan } from '@/lib/plan-limits'
 
 const PLAN_RANK: Record<ShopPlan, number> = { FREE: 0, STARTER: 1, BUSINESS: 2, ENTERPRISE: 3 }
 
@@ -88,11 +89,12 @@ export async function isPluginEnabledForShop(shopId: string, slug: string): Prom
   await ensureDefaultPlugins()
   const [plugin, shop, shopPlugin] = await Promise.all([
     prisma.plugin.findUnique({ where: { slug } }),
-    prisma.shop.findUnique({ where: { id: shopId }, select: { plan: true } }),
+    prisma.shop.findUnique({ where: { id: shopId }, select: { plan: true, paymentStatus: true } }),
     prisma.shopPlugin.findUnique({ where: { shopId_pluginSlug: { shopId, pluginSlug: slug } } }),
   ])
   if (!plugin || !plugin.active || !shop) return false
-  if (!planMeets(shop.plan, plugin.minPlan)) return false
+  const effectivePlan = getEffectivePlan(shop.plan, shop.paymentStatus)
+  if (!planMeets(effectivePlan, plugin.minPlan)) return false
   return shopPlugin?.enabled ?? true
 }
 

@@ -555,10 +555,10 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                     placeholder="e.g. Invoice #123 pending bank transfer"
                     className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                 </div>
-                {paymentStatus === 'SUSPENDED' && (
-                  <p className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
+                {paymentStatus !== 'PAID' && (
+                  <p className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-700">
                     <AlertOctagon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    New orders will be blocked platform-wide until this is changed.
+                    Orders still come through, but this shop is downgraded to Free-plan limits and features until payment status is PAID again.
                   </p>
                 )}
                 <button type="button" onClick={savePayment} disabled={savingPayment}

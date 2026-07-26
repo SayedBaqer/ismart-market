@@ -5,14 +5,18 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, ShoppingCart, Package, Box, Users,
-  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Puzzle, KeyRound, Globe2,
+  FileText, Truck, BarChart3, LogOut, Store, Settings, Newspaper, Puzzle, KeyRound, Globe2,
+  Lock, PowerOff,
 } from 'lucide-react'
 import { useState } from 'react'
+import { PLUGIN_ROUTES } from '@/lib/plugin-routes'
+import { PLUGIN_ICONS, type ShopPluginStatus } from '@/components/shop/plugin-icons'
 
 interface ShopNavProps {
   shop: { id: string; name: string; logoUrl: string | null; slug: string }
   role: string
   user: { name?: string | null; email?: string | null }
+  plugins?: ShopPluginStatus[]
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -35,7 +39,6 @@ function navItems(role: string) {
     { href: `${base}/reports`, label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
     { href: `${base}/users`, label: 'Staff Users', icon: Users, roles: ['MANAGER'] },
     { href: `${base}/news`, label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
-    { href: `${base}/plugins`, label: 'Plugins', icon: Puzzle, roles: ['MANAGER'] },
     { href: `${base}/profile`, label: 'Shop Profile', icon: Store, roles: ['MANAGER'] },
     { href: `${base}/settings`, label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
     { href: `${base}/account`, label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
@@ -43,7 +46,7 @@ function navItems(role: string) {
   return all.filter((item) => item.roles.includes(role))
 }
 
-export function ShopPortalNav({ shop, role, user }: ShopNavProps) {
+export function ShopPortalNav({ shop, role, user, plugins = [] }: ShopNavProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const items = navItems(role)
@@ -82,6 +85,51 @@ export function ShopPortalNav({ shop, role, user }: ShopNavProps) {
             </Link>
           )
         })}
+
+        {/* Individual plugins — each shows as its own item once registered; greyed if locked/off */}
+        {role === 'MANAGER' && plugins.length > 0 && (
+          <>
+            <div className="my-2 mx-3 h-px bg-white/10" />
+            {plugins.map((plugin) => {
+              const Icon = (plugin.icon && PLUGIN_ICONS[plugin.icon]) || Puzzle
+              const href = plugin.locked || !plugin.enabled ? '/shop/plugins' : (PLUGIN_ROUTES[plugin.slug] ?? '/shop/plugins')
+              const active = !plugin.locked && plugin.enabled && pathname.startsWith(PLUGIN_ROUTES[plugin.slug] ?? '\0')
+              const dimmed = plugin.locked || !plugin.enabled
+              return (
+                <Link
+                  key={plugin.slug}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  title={plugin.locked ? `Requires ${plugin.minPlan} plan` : !plugin.enabled ? 'Disabled — tap to enable' : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                    active
+                      ? 'bg-white text-blue-700 shadow-sm'
+                      : dimmed
+                      ? 'text-white/40 hover:bg-white/5 hover:text-white/60'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 truncate">{plugin.name}</span>
+                  {plugin.locked && <Lock className="h-3 w-3 shrink-0" />}
+                  {!plugin.locked && !plugin.enabled && <PowerOff className="h-3 w-3 shrink-0" />}
+                </Link>
+              )
+            })}
+            <Link
+              href="/shop/plugins"
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                pathname === '/shop/plugins'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-white/60 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Puzzle className="h-4 w-4 shrink-0" />
+              Manage Plugins
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* User footer */}

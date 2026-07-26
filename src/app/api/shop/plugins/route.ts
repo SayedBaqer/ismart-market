@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { getShopPluginStatus } from '@/lib/services/plugin.service'
+import { getEffectivePlan } from '@/lib/plan-limits'
 
 export async function GET() {
   const session = await auth()
@@ -9,10 +10,11 @@ export async function GET() {
 
   const shopUser = await prisma.shopUser.findFirst({
     where: { userId: session.user.id },
-    select: { shopId: true, shop: { select: { plan: true } } },
+    select: { shopId: true, shop: { select: { plan: true, paymentStatus: true } } },
   })
   if (!shopUser) return NextResponse.json({ error: 'No shop' }, { status: 403 })
 
-  const plugins = await getShopPluginStatus(shopUser.shopId, shopUser.shop.plan)
-  return NextResponse.json({ plugins, plan: shopUser.shop.plan })
+  const effectivePlan = getEffectivePlan(shopUser.shop.plan, shopUser.shop.paymentStatus)
+  const plugins = await getShopPluginStatus(shopUser.shopId, effectivePlan)
+  return NextResponse.json({ plugins, plan: shopUser.shop.plan, effectivePlan })
 }

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
-import { getEffectiveFeatureLimits } from '@/lib/plan-limits'
+import { getEffectiveFeatureLimits, getEffectivePlan } from '@/lib/plan-limits'
 
 async function getShopUser(userId: string) {
   return prisma.shopUser.findFirst({
     where: { userId },
-    select: { shopId: true, role: true, shop: { select: { plan: true, settings: true } } },
+    select: { shopId: true, role: true, shop: { select: { plan: true, settings: true, paymentStatus: true } } },
   })
 }
 
@@ -22,7 +22,7 @@ export async function GET() {
     orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }],
   })
 
-  const limits = await getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
+  const limits = await getEffectiveFeatureLimits(getEffectivePlan(shopUser.shop.plan, shopUser.shop.paymentStatus), shopUser.shop.settings)
 
   return NextResponse.json({ branches, limit: limits.branches, used: branches.length })
 }
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const { name, address, phone } = body as { name: string; address?: string; phone?: string }
   if (!name?.trim()) return NextResponse.json({ error: 'Branch name is required' }, { status: 400 })
 
-  const limits = await getEffectiveFeatureLimits(shopUser.shop.plan, shopUser.shop.settings)
+  const limits = await getEffectiveFeatureLimits(getEffectivePlan(shopUser.shop.plan, shopUser.shop.paymentStatus), shopUser.shop.settings)
   const count = await prisma.shopBranch.count({ where: { shopId: shopUser.shopId } })
   if (count >= limits.branches) {
     return NextResponse.json({

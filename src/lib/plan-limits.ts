@@ -1,5 +1,14 @@
-import type { ShopPlan } from '@prisma/client'
+import type { ShopPlan, ShopPaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/db'
+
+/**
+ * A shop that isn't current on payment doesn't get cut off entirely — it's
+ * downgraded to FREE-tier limits/features until payment resumes. Nothing
+ * reads shop.plan directly for gating; everything goes through this first.
+ */
+export function getEffectivePlan(plan: ShopPlan, paymentStatus: ShopPaymentStatus): ShopPlan {
+  return paymentStatus === 'PAID' ? plan : 'FREE'
+}
 
 // Plan-based feature limits + pricing. Admin-editable base config lives in the
 // Setting table (key: platform.plans); these are the fallback defaults used

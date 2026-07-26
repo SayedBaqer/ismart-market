@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Puzzle, Instagram, BarChart3, Lock, ExternalLink } from 'lucide-react'
+import { Puzzle, Lock, ExternalLink } from 'lucide-react'
+import { PLUGIN_ICONS } from '@/components/shop/plugin-icons'
+import { PLUGIN_ROUTES } from '@/lib/plugin-routes'
 
 interface PluginRow {
   slug: string
@@ -13,13 +15,6 @@ interface PluginRow {
   minPlan: string
   locked: boolean
   enabled: boolean
-}
-
-const ICONS: Record<string, typeof Instagram> = { Instagram, BarChart3 }
-
-const PLUGIN_LINKS: Record<string, string> = {
-  'instagram-import': '/shop/plugins/instagram-import',
-  'statistics-pro': '/shop/analytics/pro',
 }
 
 export default function ShopPluginsPage() {
@@ -77,8 +72,8 @@ export default function ShopPluginsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {plugins.map((p) => {
-            const Icon = (p.icon && ICONS[p.icon]) || Puzzle
-            const href = PLUGIN_LINKS[p.slug]
+            const Icon = (p.icon && PLUGIN_ICONS[p.icon]) || Puzzle
+            const href = PLUGIN_ROUTES[p.slug]
             return (
               <div key={p.slug} className={`rounded-2xl border bg-white p-5 shadow-sm space-y-3 ${p.locked ? 'border-gray-100 opacity-75' : 'border-gray-200'}`}>
                 <div className="flex items-start gap-3">

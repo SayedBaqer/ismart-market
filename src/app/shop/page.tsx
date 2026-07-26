@@ -64,14 +64,15 @@ export default async function ShopDashboard() {
         <p className="text-sm text-gray-500">{shopUser.shop.name} · {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
       </div>
 
-      {/* Billing status banner */}
+      {/* Billing status banner — non-payment downgrades to Free-tier limits/features rather than blocking orders */}
       {shopUser.shop.paymentStatus === 'SUSPENDED' && (
         <div className="flex items-start gap-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-3.5">
           <AlertOctagon className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-bold text-red-800">Orders are currently suspended</p>
+            <p className="text-sm font-bold text-red-800">Account downgraded to Free plan</p>
             <p className="text-xs text-red-600 mt-0.5">
-              Your shop can&apos;t accept new orders due to a billing issue. Please contact support to resolve this.
+              Your subscription is unpaid, so your shop is temporarily limited to Free-plan features and order limits.
+              Orders still come through — settle your subscription to restore your full plan.
             </p>
           </div>
         </div>
@@ -83,8 +84,8 @@ export default async function ShopDashboard() {
             <p className="text-sm font-bold text-amber-800">Subscription payment due</p>
             <p className="text-xs text-amber-600 mt-0.5">
               {shopUser.shop.paymentDueDate
-                ? `Please settle your subscription by ${new Date(shopUser.shop.paymentDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} to avoid interruption.`
-                : 'Please settle your subscription to avoid interruption.'}
+                ? `Please settle your subscription by ${new Date(shopUser.shop.paymentDueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} — your plan features will be limited to Free tier until then.`
+                : 'Please settle your subscription — your plan features are limited to Free tier until then.'}
             </p>
           </div>
         </div>

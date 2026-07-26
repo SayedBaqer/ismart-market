@@ -5,7 +5,7 @@ import { rateLimit, rlKey, tooManyRequests } from '@/lib/rate-limit'
 import { sendMail, orderConfirmationHtml } from '@/lib/mailer'
 import { getSetting } from '@/lib/services/settings.service'
 import { formatCurrency } from '@/lib/utils'
-import { getEffectiveFeatureLimits } from '@/lib/plan-limits'
+import { getEffectiveFeatureLimits, getEffectivePlan } from '@/lib/plan-limits'
 
 const itemSchema = z.object({
   productId: z.string(),
@@ -117,14 +117,10 @@ export async function POST(req: NextRequest) {
     const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { name: true, plan: true, settings: true, paymentStatus: true } })
     if (!shop) continue
 
-    if (shop.paymentStatus === 'SUSPENDED') {
-      return NextResponse.json({
-        error: `"${shop.name}" is temporarily unable to accept orders. Please contact support.`,
-        code: 'SHOP_SUSPENDED',
-      }, { status: 403 })
-    }
-
-    const limits = await getEffectiveFeatureLimits(shop.plan, shop.settings)
+    // Non-payment doesn't block orders — it downgrades the shop to FREE-tier
+    // limits until payment resumes, so a customer can still check out.
+    const effectivePlan = getEffectivePlan(shop.plan, shop.paymentStatus)
+    const limits = await getEffectiveFeatureLimits(effectivePlan, shop.settings)
     const [ordersToday, ordersThisMonth] = await Promise.all([
       prisma.order.count({ where: { shopId, createdAt: { gte: startOfDay } } }),
       prisma.order.count({ where: { shopId, createdAt: { gte: startOfMonth } } }),
