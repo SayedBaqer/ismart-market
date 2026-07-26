@@ -8,8 +8,8 @@ async function main() {
 
   // ── Admin user ─────────────────────────────────────────────────────────────
   await prisma.user.upsert({
-    where: { email: 'admin@ismart.market' },
-    update: { username: 'admin', role: 'SUPER_ADMIN', isActive: true },
+    where: { username: 'admin' },
+    update: { email: 'admin@ismart.market', role: 'SUPER_ADMIN', isActive: true },
     create: {
       email: 'admin@ismart.market',
       username: 'admin',

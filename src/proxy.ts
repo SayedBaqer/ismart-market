@@ -31,6 +31,7 @@ type AuthSession = {
   user?: {
     role?: string
     capabilities?: Record<string, boolean>
+    shopId?: string
   }
 } | null
 
@@ -76,6 +77,12 @@ export default auth(async function middleware(req: NextRequest & { auth: unknown
 
     const role = (session.user.role ?? 'STAFF') as UserRole
     const caps = (session.user.capabilities ?? {}) as Record<string, boolean>
+
+    // Shop-linked accounts (owner/sales/delivery) belong in the /shop portal — send them
+    // there instead of landing on (or navigating around) the platform admin dashboard.
+    if (session.user.shopId && !['SUPER_ADMIN', 'ADMIN'].includes(role)) {
+      return NextResponse.redirect(new URL('/shop', req.url))
+    }
 
     // Redirect /admin root to first accessible page for limited roles
     if (pathname === '/admin' && Object.keys(caps).length > 0) {

@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db'
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
-  if (!session?.user) redirect('/admin/login')
+  if (!session?.user) redirect('/admin/login?callbackUrl=%2Fshop')
 
   const shopUser = await prisma.shopUser.findFirst({
     where: { userId: session.user.id },

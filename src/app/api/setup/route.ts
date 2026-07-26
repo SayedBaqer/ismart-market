@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const { company, admin } = parsed.data
 
     // Check email not already taken
-    const existingUser = await prisma.user.findUnique({ where: { email: admin.email } })
+    const existingUser = await prisma.user.findFirst({ where: { email: admin.email } })
     if (existingUser) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
     }

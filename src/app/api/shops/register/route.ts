@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Name, email and password are required to create your account' }, { status: 400 })
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: data.ownerEmail } })
+    const existing = await prisma.user.findFirst({ where: { email: data.ownerEmail } })
     if (existing) {
       return NextResponse.json({ error: 'email_taken', message: 'An account with this email already exists. Please sign in first.' }, { status: 409 })
     }

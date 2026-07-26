@@ -39,7 +39,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const { identifier, password } = parsed.data
         const isEmail = identifier.includes('@')
 
-        const user = await prisma.user.findFirst({
+        // Email is not unique (a shop can create multiple accounts sharing one email),
+        // so a plain email lookup can be ambiguous — only log in by email when exactly
+        // one account has it; otherwise the account must sign in with its username.
+        const candidates = await prisma.user.findMany({
           where: isEmail
             ? { email: identifier }
             : { OR: [{ username: identifier }, { email: identifier }] },
@@ -51,13 +54,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: true,
             capabilities: true,
             isActive: true,
+            username: true,
           },
         })
+
+        // If the email matches more than one account, refuse to guess which one —
+        // the account must sign in with its username instead.
+        const user = isEmail && candidates.length > 1 ? undefined : candidates[0]
 
         if (!user || !user.isActive || !user.passwordHash) return null
 
         const valid = await bcrypt.compare(password, user.passwordHash)
         if (!valid) return null
+
+        // Shop-linked accounts (owner/sales/delivery) belong in the /shop portal, not /admin.
+        // Resolving this once at sign-in and carrying it in the JWT lets the proxy route
+        // requests correctly without a DB call on every request.
+        const shopUser = await prisma.shopUser.findFirst({
+          where: { userId: user.id },
+          select: { shopId: true },
+        })
 
         return {
           id: user.id,
@@ -65,6 +81,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           role: user.role,
           capabilities: (user.capabilities as Record<string, boolean>) ?? {},
+          shopId: shopUser?.shopId,
         }
       },
     }),
@@ -75,6 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id
         token.role = (user as { role: UserRole }).role
         token.capabilities = (user as { capabilities: unknown }).capabilities
+        token.shopId = (user as { shopId?: string }).shopId
       }
       return token
     },
@@ -82,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.id = token.id as string
       session.user.role = token.role as UserRole
       session.user.capabilities = token.capabilities as Record<string, boolean>
+      session.user.shopId = token.shopId as string | undefined
       return session
     },
   },
@@ -92,6 +111,7 @@ declare module 'next-auth' {
   interface User {
     role: UserRole
     capabilities: Record<string, boolean>
+    shopId?: string
   }
   interface Session {
     user: {
@@ -100,6 +120,7 @@ declare module 'next-auth' {
       name?: string | null
       role: UserRole
       capabilities: Record<string, boolean>
+      shopId?: string
     }
   }
 }

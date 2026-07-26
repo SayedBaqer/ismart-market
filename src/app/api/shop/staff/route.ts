@@ -22,7 +22,7 @@ export async function GET() {
 
   const shopUsers = await prisma.shopUser.findMany({
     where: { shopId: su.shop.id },
-    include: { user: { select: { id: true, name: true, email: true, isActive: true, createdAt: true } } },
+    include: { user: { select: { id: true, name: true, email: true, username: true, isActive: true, createdAt: true } } },
     orderBy: { joinedAt: 'asc' },
   })
 
@@ -57,17 +57,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Only shop owners can add staff' }, { status: 403 })
   }
 
-  const { name, email, password, role } = await req.json() as {
-    name?: string; email?: string; password?: string; role?: string
+  const { name, email, username, password, role } = await req.json() as {
+    name?: string; email?: string; username?: string; password?: string; role?: string
   }
 
-  if (!email || !password || !role) {
-    return NextResponse.json({ error: 'Email, password and role are required' }, { status: 400 })
+  if (!email || !username || !password || !role) {
+    return NextResponse.json({ error: 'Email, username, password and role are required' }, { status: 400 })
   }
 
   // Only STAFF (sales) and CASHIER (delivery) can be added this way
   if (!['STAFF', 'CASHIER'].includes(role)) {
     return NextResponse.json({ error: 'Invalid role. Only Sales (STAFF) or Delivery (CASHIER) accounts can be created.' }, { status: 400 })
+  }
+
+  if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
+    return NextResponse.json({ error: 'Username must be 3-32 characters (letters, numbers, dot, dash, underscore)' }, { status: 400 })
   }
 
   // Enforce free plan quota
@@ -91,31 +95,81 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
   }
 
-  // Check if user already exists
-  let user = await prisma.user.findUnique({ where: { email } })
-  if (user) {
-    const existing = await prisma.shopUser.findUnique({
-      where: { shopId_userId: { shopId: su.shop.id, userId: user.id } },
-    })
-    if (existing) return NextResponse.json({ error: 'This email is already a member of your shop' }, { status: 409 })
-  } else {
-    const hash = await bcrypt.hash(password, 12)
-    user = await prisma.user.create({
-      data: {
-        name: name?.trim() || null,
-        email,
-        passwordHash: hash,
-        role: role as 'STAFF' | 'CASHIER',
-        isActive: true,
-      },
-    })
+  // Username is the unique login key — multiple accounts (sales, delivery, ...) can share
+  // the same shop email, so we don't look accounts up by email here.
+  const usernameTaken = await prisma.user.findUnique({ where: { username } })
+  if (usernameTaken) {
+    return NextResponse.json({ error: `Username "${username}" is already taken` }, { status: 409 })
   }
+
+  const hash = await bcrypt.hash(password, 12)
+  const user = await prisma.user.create({
+    data: {
+      name: name?.trim() || null,
+      email,
+      username,
+      passwordHash: hash,
+      role: role as 'STAFF' | 'CASHIER',
+      isActive: true,
+    },
+  })
 
   await prisma.shopUser.create({
     data: { shopId: su.shop.id, userId: user.id, role: role as 'STAFF' | 'CASHIER' },
   })
 
   return NextResponse.json({ ok: true })
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const su = await getShopAndOwner(session.user.id)
+  if (!su || su.role !== 'MANAGER') {
+    return NextResponse.json({ error: 'Only shop owners can manage staff' }, { status: 403 })
+  }
+
+  const { shopUserId, name, email, username, newPassword } = await req.json() as {
+    shopUserId?: string; name?: string; email?: string; username?: string; newPassword?: string
+  }
+  if (!shopUserId) return NextResponse.json({ error: 'shopUserId required' }, { status: 400 })
+
+  const target = await prisma.shopUser.findFirst({ where: { id: shopUserId, shopId: su.shop.id } })
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (target.role === 'MANAGER') return NextResponse.json({ error: 'Cannot modify the shop owner here' }, { status: 400 })
+
+  if (username !== undefined) {
+    if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
+      return NextResponse.json({ error: 'Username must be 3-32 characters (letters, numbers, dot, dash, underscore)' }, { status: 400 })
+    }
+    const clash = await prisma.user.findUnique({ where: { username } })
+    if (clash && clash.id !== target.userId) {
+      return NextResponse.json({ error: `Username "${username}" is already taken` }, { status: 409 })
+    }
+  }
+
+  if (newPassword && newPassword.length < 8) {
+    return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+  }
+
+  const data: Record<string, unknown> = {}
+  if (name !== undefined) data.name = name.trim() || null
+  if (email !== undefined) data.email = email.trim()
+  if (username !== undefined) data.username = username
+  if (newPassword) data.passwordHash = await bcrypt.hash(newPassword, 12)
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+  }
+
+  const user = await prisma.user.update({
+    where: { id: target.userId },
+    data,
+    select: { id: true, name: true, email: true, username: true },
+  })
+
+  return NextResponse.json({ ok: true, user })
 }
 
 export async function DELETE(req: NextRequest) {

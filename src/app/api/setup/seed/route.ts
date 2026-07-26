@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 async function runSeed() {
   const results: string[] = []
 
-  const existing = await prisma.user.findUnique({ where: { email: 'admin@ismart.market' } })
+  const existing = await prisma.user.findFirst({ where: { email: 'admin@ismart.market' } })
   if (!existing) {
     await prisma.user.create({
       data: {

@@ -125,7 +125,7 @@ model ShopUser {
 
 model User {
   id            String    @id @default(cuid())
-  email         String    @unique
+  email         String    // not globally unique — a shop can create multiple accounts (sales, delivery, etc.) sharing one email; username is the unique login key
   username      String?   @unique
   name          String?
   passwordHash  String?

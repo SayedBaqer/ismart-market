@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
-import { ShoppingCart, Package, Users, Truck, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { ShoppingCart, Package, Users, Truck, TrendingUp, Clock, CheckCircle, AlertCircle, Box, Store } from 'lucide-react'
 
 export default async function ShopDashboard() {
   const session = await auth()
@@ -135,7 +135,27 @@ export default async function ShopDashboard() {
                 </p>
               </div>
             </Link>
+            <Link href="/shop/products" className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all">
+              <div className="rounded-xl bg-indigo-50 p-2.5">
+                <Box className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Products</p>
+                <p className="text-xs text-gray-400">Add & manage listings</p>
+              </div>
+            </Link>
           </>
+        )}
+        {role === 'MANAGER' && (
+          <Link href="/shop/profile" className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all">
+            <div className="rounded-xl bg-teal-50 p-2.5">
+              <Store className="h-5 w-5 text-teal-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Shop Settings</p>
+              <p className="text-xs text-gray-400">Name, branches & page layout</p>
+            </div>
+          </Link>
         )}
       </div>
 

@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } })
+  const existing = await prisma.user.findFirst({ where: { email: parsed.data.email } })
   if (existing) return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12)

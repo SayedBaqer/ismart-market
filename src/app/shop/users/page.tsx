@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Users, Plus, X, Check, Truck, ShoppingCart, Crown, RefreshCw, Smartphone, Zap, Trash2 } from 'lucide-react'
+import { Users, Plus, X, Check, Truck, ShoppingCart, Crown, RefreshCw, Smartphone, Zap, Trash2, Pencil, KeyRound } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
@@ -9,6 +9,7 @@ interface StaffMember {
   id: string
   name: string | null
   email: string
+  username: string | null
   role: string
   isActive: boolean
   shopUserId: string
@@ -52,10 +53,16 @@ export default function ShopUsersPage() {
   const [used, setUsed] = useState<Quota>({ STAFF: 0, CASHIER: 0 })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'STAFF' })
+  const [form, setForm] = useState({ name: '', email: '', username: '', password: '', role: 'STAFF' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', email: '', username: '' })
+  const [resettingId, setResettingId] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [busyId, setBusyId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -70,7 +77,7 @@ export default function ShopUsersPage() {
   useEffect(() => { load() }, [load])
 
   async function addUser() {
-    if (!form.email || !form.password) { setError('Email and password required'); return }
+    if (!form.email || !form.username || !form.password) { setError('Email, username and password required'); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/shop/staff', {
@@ -85,7 +92,7 @@ export default function ShopUsersPage() {
       return
     }
     setShowForm(false)
-    setForm({ name: '', email: '', password: '', role: 'STAFF' })
+    setForm({ name: '', email: '', username: '', password: '', role: 'STAFF' })
     load()
     setSaving(false)
   }
@@ -100,6 +107,44 @@ export default function ShopUsersPage() {
     })
     setDeletingId(null)
     load()
+  }
+
+  function startEdit(member: StaffMember) {
+    setEditingId(member.shopUserId)
+    setEditForm({ name: member.name ?? '', email: member.email, username: member.username ?? '' })
+    setResettingId(null)
+    setError('')
+  }
+
+  async function saveEdit(shopUserId: string) {
+    setBusyId(shopUserId)
+    setError('')
+    const res = await fetch('/api/shop/staff', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopUserId, ...editForm }),
+    })
+    const d = await res.json()
+    if (!res.ok) { setError(d.error ?? 'Failed to update'); setBusyId(null); return }
+    setEditingId(null)
+    load()
+    setBusyId(null)
+  }
+
+  async function resetPassword(shopUserId: string) {
+    if (newPassword.length < 8) { setError('Password must be at least 8 characters'); return }
+    setBusyId(shopUserId)
+    setError('')
+    const res = await fetch('/api/shop/staff', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shopUserId, newPassword }),
+    })
+    const d = await res.json()
+    if (!res.ok) { setError(d.error ?? 'Failed to reset password'); setBusyId(null); return }
+    setResettingId(null)
+    setNewPassword('')
+    setBusyId(null)
   }
 
   const selectedRoleInfo = ADD_ROLES.find((r) => r.id === form.role)
@@ -238,6 +283,14 @@ export default function ShopUsersPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="user@email.com"
+                hint="Can be the same email as another account in your shop"
+              />
+              <Input
+                label="Username *"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                placeholder="e.g. shop-sales1"
+                hint="Must be unique — this is what they log in with"
               />
               <Input
                 label="Password *"
@@ -274,31 +327,78 @@ export default function ShopUsersPage() {
             const info = ROLE_INFO[member.role as keyof typeof ROLE_INFO]
             const Icon = info?.icon ?? Users
             const isOwner = member.role === 'MANAGER'
+            const isEditing = editingId === member.shopUserId
+            const isResetting = resettingId === member.shopUserId
+            const isBusy = busyId === member.shopUserId
             return (
-              <div key={member.id} className="flex items-center gap-3 rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-sm">
-                <div className={`rounded-xl p-2.5 shrink-0 ${info?.color ?? 'bg-gray-100 text-gray-500'}`}>
-                  <Icon className="h-4 w-4" />
+              <div key={member.id} className="rounded-2xl bg-white border border-gray-100 px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-xl p-2.5 shrink-0 ${info?.color ?? 'bg-gray-100 text-gray-500'}`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{member.name ?? 'Unnamed'}</p>
+                    <p className="text-xs text-gray-400 truncate">{member.email}{member.username ? ` · @${member.username}` : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs font-semibold rounded-full px-2.5 py-0.5 ${info?.color ?? 'bg-gray-100 text-gray-500'}`}>
+                      {info?.label ?? member.role}
+                    </span>
+                    {!isOwner && (
+                      <>
+                        <button
+                          onClick={() => (isEditing ? setEditingId(null) : startEdit(member))}
+                          className="p-1.5 rounded-lg text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => { setResettingId(isResetting ? null : member.shopUserId); setEditingId(null); setNewPassword(''); setError('') }}
+                          className="p-1.5 rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
+                          title="Reset password"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => removeUser(member.shopUserId)}
+                          disabled={deletingId === member.shopUserId}
+                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          title="Remove"
+                        >
+                          {deletingId === member.shopUserId
+                            ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{member.name ?? 'Unnamed'}</p>
-                  <p className="text-xs text-gray-400 truncate">{member.email}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-xs font-semibold rounded-full px-2.5 py-0.5 ${info?.color ?? 'bg-gray-100 text-gray-500'}`}>
-                    {info?.label ?? member.role}
-                  </span>
-                  {!isOwner && (
-                    <button
-                      onClick={() => removeUser(member.shopUserId)}
-                      disabled={deletingId === member.shopUserId}
-                      className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      {deletingId === member.shopUserId
-                        ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        : <Trash2 className="h-3.5 w-3.5" />}
-                    </button>
-                  )}
-                </div>
+
+                {isEditing && (
+                  <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    <Input label="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                    <Input label="Email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                    <Input label="Username" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} />
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingId(null)}>Cancel</Button>
+                      <Button size="sm" className="flex-1" isLoading={isBusy} onClick={() => saveEdit(member.shopUserId)}>Save</Button>
+                    </div>
+                  </div>
+                )}
+
+                {isResetting && (
+                  <div className="mt-3 flex gap-2 border-t border-gray-100 pt-3">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New password (min 8 chars)"
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    />
+                    <Button size="sm" isLoading={isBusy} onClick={() => resetPassword(member.shopUserId)}>Set</Button>
+                  </div>
+                )}
               </div>
             )
           })}

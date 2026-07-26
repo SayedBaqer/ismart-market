@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const { name, email, password } = parsed.data
 
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+  const existing = await prisma.user.findFirst({ where: { email }, select: { id: true } })
   if (existing) {
     return NextResponse.json({ error: 'email_taken' }, { status: 409 })
   }
