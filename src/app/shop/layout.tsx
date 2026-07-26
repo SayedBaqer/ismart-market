@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { getShopPluginStatus } from '@/lib/services/plugin.service'
 import { getEffectivePlan } from '@/lib/plan-limits'
 import { getStoreLang } from '@/lib/i18n/get-store-lang'
+import { ShopLangProvider } from '@/components/shop/lang-provider'
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -50,7 +51,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
 
       {/* Main content — WebkitOverflowScrolling: touch prevents iOS from swallowing taps */}
       <main className="flex-1 overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {children}
+        <ShopLangProvider value={lang}>{children}</ShopLangProvider>
       </main>
 
       {/* Mobile bottom nav */}

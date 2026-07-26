@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Store, Save, MapPin, Plus, Trash2, Phone, Mail, Link2, Check, X, FileText, Upload, Loader2 } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface ShopProfile {
   id: string
@@ -27,6 +28,7 @@ interface Branch {
 }
 
 export default function ShopProfilePage() {
+  const t = useShopT()
   const [profile, setProfile] = useState<ShopProfile | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -80,8 +82,8 @@ export default function ShopProfilePage() {
   useEffect(() => { load() }, [load])
 
   async function saveProfile() {
-    if (!name.trim()) { setError('Shop name is required'); return }
-    if (slugStatus === 'taken') { setError('That shop URL is already taken'); return }
+    if (!name.trim()) { setError(t.profShopNameRequired); return }
+    if (slugStatus === 'taken') { setError(t.profUrlTakenError); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/shop/profile', {
@@ -91,7 +93,7 @@ export default function ShopProfilePage() {
     })
     if (!res.ok) {
       const d = await res.json()
-      setError(d.error ?? 'Failed to save')
+      setError(d.error ?? t.profSaveFailed)
     } else {
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
@@ -122,13 +124,13 @@ export default function ShopProfilePage() {
       setCrCertificateUrl(d.url)
     } else {
       const d = await res.json()
-      setError(d.error ?? 'Failed to upload certificate')
+      setError(d.error ?? t.profUploadCertFailed)
     }
     setUploadingCert(false)
   }
 
   async function addBranch() {
-    if (!newBranch.name.trim()) { setBranchError('Branch name is required'); return }
+    if (!newBranch.name.trim()) { setBranchError(t.profBranchNameRequired); return }
     setAddingBranch(true)
     setBranchError('')
     const res = await fetch('/api/shop/branches', {
@@ -138,7 +140,7 @@ export default function ShopProfilePage() {
     })
     if (!res.ok) {
       const d = await res.json()
-      setBranchError(d.error ?? 'Failed to add branch')
+      setBranchError(d.error ?? t.profAddBranchFailed)
     } else {
       setNewBranch({ name: '', address: '', phone: '' })
       load()
@@ -147,12 +149,12 @@ export default function ShopProfilePage() {
   }
 
   async function removeBranch(id: string) {
-    if (!confirm('Remove this branch?')) return
+    if (!confirm(t.profRemoveBranchConfirm)) return
     const res = await fetch(`/api/shop/branches/${id}`, { method: 'DELETE' })
     if (res.ok) load()
     else {
       const d = await res.json()
-      setBranchError(d.error ?? 'Failed to remove branch')
+      setBranchError(d.error ?? t.profRemoveBranchFailed)
     }
   }
 
@@ -167,15 +169,15 @@ export default function ShopProfilePage() {
       <div className="flex items-center gap-3">
         <Store className="h-5 w-5 text-blue-600" />
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Shop Profile</h1>
-          <p className="text-xs text-gray-500">Edit your shop name and manage branches</p>
+          <h1 className="text-xl font-bold text-gray-900">{t.profTitle}</h1>
+          <p className="text-xs text-gray-500">{t.profSubtitle}</p>
         </div>
       </div>
 
       {/* Shop info */}
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Basic Info</h2>
+          <h2 className="text-sm font-semibold text-gray-900">{t.profBasicInfo}</h2>
           <button
             type="button"
             onClick={saveProfile}
@@ -183,39 +185,39 @@ export default function ShopProfilePage() {
             className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
             <Save className="h-3.5 w-3.5" />
-            {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save'}
+            {saving ? t.profSaving : saved ? t.profSaved : t.profSave}
           </button>
         </div>
         {error && <p className="text-xs text-red-600">{error}</p>}
         <div>
-          <label className="text-xs font-semibold text-gray-600">Shop Name</label>
+          <label className="text-xs font-semibold text-gray-600">{t.profShopName}</label>
           <input value={name} onChange={(e) => setName(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600">Description</label>
+          <label className="text-xs font-semibold text-gray-600">{t.profDescription}</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Mail className="h-3 w-3" /> Email</label>
+            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Mail className="h-3 w-3" /> {t.profEmail}</label>
             <input value={email} onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</label>
+            <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Phone className="h-3 w-3" /> {t.profPhone}</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)}
               className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
           </div>
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><MapPin className="h-3 w-3" /> Main Address</label>
+          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><MapPin className="h-3 w-3" /> {t.profMainAddress}</label>
           <input value={address} onChange={(e) => setAddress(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Link2 className="h-3 w-3" /> Shop URL</label>
+          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Link2 className="h-3 w-3" /> {t.profShopUrl}</label>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-sm text-gray-400 shrink-0">/shops/</span>
             <div className="relative flex-1">
@@ -226,33 +228,33 @@ export default function ShopProfilePage() {
               {slugStatus === 'taken' && <X className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
             </div>
           </div>
-          {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">That URL is already taken</p>}
-          {slugStatus === 'available' && <p className="text-xs text-emerald-600 mt-1">Available</p>}
+          {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">{t.profUrlTaken}</p>}
+          {slugStatus === 'available' && <p className="text-xs text-emerald-600 mt-1">{t.profUrlAvailable}</p>}
         </div>
       </div>
 
       {/* CR / Business registration */}
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><FileText className="h-4 w-4 text-gray-500" /> Commercial Registration</h2>
+        <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><FileText className="h-4 w-4 text-gray-500" /> {t.profCommercialRegistration}</h2>
         <div>
-          <label className="text-xs font-semibold text-gray-600">CR Number</label>
+          <label className="text-xs font-semibold text-gray-600">{t.profCrNumber}</label>
           <input value={crNumber} onChange={(e) => setCrNumber(e.target.value)}
-            placeholder="e.g. 123456-1"
+            placeholder={t.profCrNumberPlaceholder}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600">CR Certificate (image or PDF)</label>
+          <label className="text-xs font-semibold text-gray-600">{t.profCrCertificate}</label>
           <div className="mt-1 flex items-center gap-3">
             <label className="flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 cursor-pointer transition-colors">
               <Upload className="h-4 w-4" />
-              {uploadingCert ? 'Uploading…' : 'Upload file'}
+              {uploadingCert ? t.profUploading : t.profUploadFile}
               <input type="file" accept="image/*,application/pdf" className="hidden"
                 disabled={uploadingCert}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCertificate(f) }} />
             </label>
             {crCertificateUrl && (
               <a href={crCertificateUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                View uploaded certificate
+                {t.profViewCertificate}
               </a>
             )}
           </div>
@@ -263,8 +265,10 @@ export default function ShopProfilePage() {
       <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Branches</h2>
-            <p className="text-xs text-gray-400">{branches.length} / {branchLimit} used on your {profile?.plan} plan</p>
+            <h2 className="text-sm font-semibold text-gray-900">{t.profBranches}</h2>
+            <p className="text-xs text-gray-400">
+              {t.profBranchesUsed.replace('{used}', String(branches.length)).replace('{limit}', String(branchLimit)).replace('{plan}', String(profile?.plan))}
+            </p>
           </div>
         </div>
 
@@ -276,7 +280,7 @@ export default function ShopProfilePage() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                   {b.name}
-                  {b.isMain && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">MAIN</span>}
+                  {b.isMain && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-700">{t.profMain}</span>}
                 </p>
                 {b.address && <p className="text-xs text-gray-500 mt-0.5">{b.address}</p>}
                 {b.phone && <p className="text-xs text-gray-400">{b.phone}</p>}
@@ -292,13 +296,13 @@ export default function ShopProfilePage() {
 
         {branches.length < branchLimit ? (
           <div className="rounded-xl border border-dashed border-gray-200 p-4 space-y-2">
-            <input placeholder="Branch name" value={newBranch.name}
+            <input placeholder={t.profBranchName} value={newBranch.name}
               onChange={(e) => setNewBranch((v) => ({ ...v, name: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-            <input placeholder="Address (optional)" value={newBranch.address}
+            <input placeholder={t.profBranchAddressOptional} value={newBranch.address}
               onChange={(e) => setNewBranch((v) => ({ ...v, address: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-            <input placeholder="Phone (optional)" value={newBranch.phone}
+            <input placeholder={t.profBranchPhoneOptional} value={newBranch.phone}
               onChange={(e) => setNewBranch((v) => ({ ...v, phone: e.target.value }))}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
             <button
@@ -307,12 +311,12 @@ export default function ShopProfilePage() {
               disabled={addingBranch}
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 py-2 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-50"
             >
-              <Plus className="h-4 w-4" /> {addingBranch ? 'Adding…' : 'Add Branch'}
+              <Plus className="h-4 w-4" /> {addingBranch ? t.profAdding : t.profAddBranch}
             </button>
           </div>
         ) : (
           <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-            Branch limit reached for your plan. Upgrade to add more branches.
+            {t.profBranchLimitReached}
           </p>
         )}
       </div>

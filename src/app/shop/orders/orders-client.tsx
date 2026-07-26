@@ -6,6 +6,8 @@ import {
   Clock, Truck, Package, XCircle, RefreshCw, AlertCircle,
   ChevronLeft, ChevronRight, MapPin, Phone,
 } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
+import type { ShopTranslations } from '@/lib/i18n/shop'
 
 type RawStatus = 'PENDING' | 'CONFIRMED' | 'PREPARED' | 'IN_DELIVERY' | 'PROCESSING' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'
 type FilterStatus = 'ALL' | RawStatus
@@ -34,54 +36,58 @@ interface Order {
   assignedTo: { name: string | null } | null
 }
 
-const STATUS_META: Record<string, { label: string; cls: string; dot: string; Icon: React.ComponentType<{ className?: string }> }> = {
-  PENDING:     { label: 'Pending',      cls: 'bg-amber-100 text-amber-700',   dot: 'bg-amber-400',  Icon: Clock },
-  CONFIRMED:   { label: 'Confirmed',    cls: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-400',   Icon: CheckCircle2 },
-  PREPARED:    { label: 'Ready',        cls: 'bg-purple-100 text-purple-700', dot: 'bg-purple-400', Icon: Package },
-  IN_DELIVERY: { label: 'Out Delivery', cls: 'bg-orange-100 text-orange-700', dot: 'bg-orange-400', Icon: Truck },
-  PROCESSING:  { label: 'Processing',   cls: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-300',   Icon: Package },
-  SHIPPED:     { label: 'Shipped',      cls: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-400', Icon: Truck },
-  COMPLETED:   { label: 'Completed',    cls: 'bg-green-100 text-green-700',   dot: 'bg-green-400',  Icon: CheckCircle2 },
-  CANCELLED:   { label: 'Cancelled',    cls: 'bg-red-100 text-red-700',       dot: 'bg-red-400',    Icon: XCircle },
-  REFUNDED:    { label: 'Refunded',     cls: 'bg-gray-100 text-gray-600',     dot: 'bg-gray-400',   Icon: RefreshCw },
+function statusMeta(t: ShopTranslations): Record<string, { label: string; cls: string; dot: string; Icon: React.ComponentType<{ className?: string }> }> {
+  return {
+    PENDING:     { label: t.ordStatusPending,     cls: 'bg-amber-100 text-amber-700',   dot: 'bg-amber-400',  Icon: Clock },
+    CONFIRMED:   { label: t.ordStatusConfirmed,   cls: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-400',   Icon: CheckCircle2 },
+    PREPARED:    { label: t.ordStatusReady,       cls: 'bg-purple-100 text-purple-700', dot: 'bg-purple-400', Icon: Package },
+    IN_DELIVERY: { label: t.ordStatusOutDelivery, cls: 'bg-orange-100 text-orange-700', dot: 'bg-orange-400', Icon: Truck },
+    PROCESSING:  { label: t.ordStatusProcessing,  cls: 'bg-blue-100 text-blue-700',     dot: 'bg-blue-300',   Icon: Package },
+    SHIPPED:     { label: t.ordStatusShipped,     cls: 'bg-indigo-100 text-indigo-700', dot: 'bg-indigo-400', Icon: Truck },
+    COMPLETED:   { label: t.ordStatusCompleted,   cls: 'bg-green-100 text-green-700',   dot: 'bg-green-400',  Icon: CheckCircle2 },
+    CANCELLED:   { label: t.ordStatusCancelled,   cls: 'bg-red-100 text-red-700',       dot: 'bg-red-400',    Icon: XCircle },
+    REFUNDED:    { label: t.ordStatusRefunded,    cls: 'bg-gray-100 text-gray-600',     dot: 'bg-gray-400',   Icon: RefreshCw },
+  }
 }
 
-const STATUS_TABS: { key: FilterStatus; label: string }[] = [
-  { key: 'ALL',         label: 'All' },
-  { key: 'PENDING',     label: 'Pending' },
-  { key: 'CONFIRMED',   label: 'Confirmed' },
-  { key: 'PREPARED',    label: 'Ready' },
-  { key: 'IN_DELIVERY', label: 'Delivery' },
-  { key: 'COMPLETED',   label: 'Done' },
-  { key: 'CANCELLED',   label: 'Cancelled' },
-]
+function statusTabs(t: ShopTranslations): { key: FilterStatus; label: string }[] {
+  return [
+    { key: 'ALL',         label: t.ordAll },
+    { key: 'PENDING',     label: t.ordStatusPending },
+    { key: 'CONFIRMED',   label: t.ordStatusConfirmed },
+    { key: 'PREPARED',    label: t.ordStatusReady },
+    { key: 'IN_DELIVERY', label: t.ordTabDelivery },
+    { key: 'COMPLETED',   label: t.ordTabDone },
+    { key: 'CANCELLED',   label: t.ordStatusCancelled },
+  ]
+}
 
-function getActions(status: RawStatus, role: ShopRole): { label: string; action: string; cls: string; needsAddress?: boolean }[] {
+function getActions(status: RawStatus, role: ShopRole, t: ShopTranslations): { label: string; action: string; cls: string; needsAddress?: boolean }[] {
   const canManage = role === 'MANAGER' || role === 'STAFF'
-  const cancelBtn = { label: 'Cancel Order', action: 'cancel', cls: 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' }
+  const cancelBtn = { label: t.ordCancelOrder, action: 'cancel', cls: 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100' }
 
   switch (status) {
     case 'PENDING':
       return canManage
-        ? [{ label: 'Confirm Order', action: 'confirm', cls: 'bg-blue-600 text-white hover:bg-blue-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
+        ? [{ label: t.ordConfirmOrder, action: 'confirm', cls: 'bg-blue-600 text-white hover:bg-blue-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
         : []
     case 'CONFIRMED':
       return canManage
-        ? [{ label: 'Mark Ready', action: 'prepare', cls: 'bg-purple-600 text-white hover:bg-purple-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
+        ? [{ label: t.ordMarkReady, action: 'prepare', cls: 'bg-purple-600 text-white hover:bg-purple-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
         : []
     case 'PREPARED':
       return canManage
-        ? [{ label: 'Send to Delivery', action: 'transfer_delivery', cls: 'bg-orange-500 text-white hover:bg-orange-600', needsAddress: true }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
+        ? [{ label: t.ordSendToDelivery, action: 'transfer_delivery', cls: 'bg-orange-500 text-white hover:bg-orange-600', needsAddress: true }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
         : []
     case 'IN_DELIVERY':
-      return [{ label: 'Mark Delivered', action: 'deliver', cls: 'bg-green-600 text-white hover:bg-green-700' }]
+      return [{ label: t.ordMarkDelivered, action: 'deliver', cls: 'bg-green-600 text-white hover:bg-green-700' }]
     case 'PROCESSING':
       return canManage
-        ? [{ label: 'Mark Shipped', action: 'ship', cls: 'bg-indigo-600 text-white hover:bg-indigo-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
+        ? [{ label: t.ordMarkShipped, action: 'ship', cls: 'bg-indigo-600 text-white hover:bg-indigo-700' }, ...(role === 'MANAGER' ? [cancelBtn] : [])]
         : []
     case 'SHIPPED':
       return canManage
-        ? [{ label: 'Mark Completed', action: 'complete', cls: 'bg-green-600 text-white hover:bg-green-700' }]
+        ? [{ label: t.ordMarkCompleted, action: 'complete', cls: 'bg-green-600 text-white hover:bg-green-700' }]
         : []
     default:
       return []
@@ -94,6 +100,9 @@ interface Props {
 }
 
 export function ShopOrdersClient({ role, shopAddress }: Props) {
+  const t = useShopT()
+  const STATUS_META = statusMeta(t)
+  const STATUS_TABS = statusTabs(t)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('ALL')
@@ -182,8 +191,8 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
         <div className="flex items-center gap-3">
           <ShoppingCart className="h-5 w-5 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Orders</h1>
-            <p className="text-xs text-gray-500">{total} total · {role} view</p>
+            <h1 className="text-xl font-bold text-gray-900">{t.ordTitle}</h1>
+            <p className="text-xs text-gray-500">{total} {t.ordTotalLabel} · {role} {t.ordViewLabel}</p>
           </div>
         </div>
         <button type="button" onClick={load}
@@ -198,7 +207,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Order #, customer name or email…"
+          placeholder={t.ordSearchOrderCustomer}
           className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
       </div>
@@ -221,7 +230,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
           <ShoppingCart className="h-10 w-10 text-gray-300 mb-3" />
-          <p className="text-sm font-semibold text-gray-500">No orders found</p>
+          <p className="text-sm font-semibold text-gray-500">{t.ordNoOrders}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -229,7 +238,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
             const sm = STATUS_META[order.status]
             const Icon = sm?.Icon ?? Clock
             const isExpanded = expandedId === order.id
-            const actions = getActions(order.status, role)
+            const actions = getActions(order.status, role, t)
             const isCancelling = cancellingId === order.id
             const isDeliveryForm = deliveryFormId === order.id
 
@@ -251,7 +260,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">
-                      {order.customer?.displayName ?? order.customerName ?? 'Guest'}
+                      {order.customer?.displayName ?? order.customerName ?? t.ordGuest}
                       {' · '}
                       {new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -271,11 +280,11 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                     {['CONFIRMED', 'PREPARED', 'IN_DELIVERY', 'COMPLETED'].includes(order.status) && (
                       <div className="flex gap-1 text-[10px] text-gray-400 overflow-x-auto pb-1">
                         {[
-                          { label: 'Placed', at: order.createdAt },
-                          { label: 'Confirmed', at: order.confirmedAt },
-                          { label: 'Ready', at: order.preparedAt },
-                          { label: 'Sent', at: order.transferredAt },
-                          { label: 'Delivered', at: order.deliveredAt },
+                          { label: t.ordPlaced, at: order.createdAt },
+                          { label: t.ordConfirmedAt, at: order.confirmedAt },
+                          { label: t.ordReadyAt, at: order.preparedAt },
+                          { label: t.ordSentAt, at: order.transferredAt },
+                          { label: t.ordDeliveredAt, at: order.deliveredAt },
                         ].map(({ label, at }) => at ? (
                           <span key={label} className="shrink-0 flex flex-col items-center gap-0.5 px-2">
                             <span className="h-1 w-1 rounded-full bg-blue-400" />
@@ -288,7 +297,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
 
                     {/* Line items */}
                     <div>
-                      <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Items</p>
+                      <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{t.ordItems}</p>
                       <div className="space-y-1.5">
                         {order.lineItems.map((item, i) => (
                           <div key={i} className="flex justify-between text-sm gap-2">
@@ -321,7 +330,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                           <div className="flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2">
                             <MapPin className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
                             <div>
-                              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">Pickup</p>
+                              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">{t.ordPickup}</p>
                               <p className="text-xs text-gray-700">{order.pickupAddress}</p>
                             </div>
                           </div>
@@ -330,7 +339,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                           <div className="flex items-start gap-2 rounded-xl bg-green-50 border border-green-100 px-3 py-2">
                             <MapPin className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" />
                             <div>
-                              <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wide">Delivery</p>
+                              <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wide">{t.ordDelivery}</p>
                               <p className="text-xs text-gray-700">{order.deliveryAddress}</p>
                             </div>
                           </div>
@@ -349,23 +358,23 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                     {/* Delivery address form */}
                     {isDeliveryForm && (
                       <div className="rounded-xl bg-orange-50 border border-orange-200 p-4 space-y-3">
-                        <p className="text-xs font-semibold text-orange-800">Enter delivery details</p>
+                        <p className="text-xs font-semibold text-orange-800">{t.ordEnterDeliveryDetails}</p>
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs text-gray-600 font-medium">Pickup / Collection address</label>
+                            <label className="text-xs text-gray-600 font-medium">{t.ordPickupAddress}</label>
                             <input
                               value={pickupAddr}
                               onChange={(e) => setPickupAddr(e.target.value)}
-                              placeholder="Shop address or pickup point"
+                              placeholder={t.ordPickupPlaceholder}
                               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-600 font-medium">Customer delivery address</label>
+                            <label className="text-xs text-gray-600 font-medium">{t.ordDeliveryAddress}</label>
                             <input
                               value={deliveryAddr}
                               onChange={(e) => setDeliveryAddr(e.target.value)}
-                              placeholder="Customer's address"
+                              placeholder={t.ordDeliveryPlaceholder}
                               className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                             />
                           </div>
@@ -374,11 +383,11 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                           <button type="button" onClick={() => confirmTransfer(order.id)} disabled={acting === order.id}
                             className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50">
                             <Truck className="h-4 w-4" />
-                            {acting === order.id ? 'Sending…' : 'Send to Delivery'}
+                            {acting === order.id ? t.ordSending : t.ordSendToDelivery}
                           </button>
                           <button type="button" onClick={() => setDeliveryFormId(null)}
                             className="text-sm text-gray-500 hover:text-gray-700 px-3">
-                            Cancel
+                            {t.ordCancel}
                           </button>
                         </div>
                       </div>
@@ -387,21 +396,21 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                     {/* Cancel form */}
                     {isCancelling && (
                       <div className="rounded-xl bg-red-50 border border-red-200 p-4 space-y-2">
-                        <p className="text-xs font-semibold text-red-700">Reason for cancellation</p>
+                        <p className="text-xs font-semibold text-red-700">{t.ordReasonForCancellation}</p>
                         <input
                           value={cancelReason}
                           onChange={(e) => setCancelReason(e.target.value)}
-                          placeholder="e.g. Out of stock, Customer requested"
+                          placeholder={t.ordCancelReasonPlaceholder}
                           className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                         />
                         <div className="flex gap-2">
                           <button type="button" onClick={() => confirmCancel(order.id)} disabled={acting === order.id}
                             className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
                             <XCircle className="h-4 w-4" />
-                            {acting === order.id ? 'Cancelling…' : 'Confirm Cancel'}
+                            {acting === order.id ? t.ordCancelling : t.ordConfirmCancel}
                           </button>
                           <button type="button" onClick={() => setCancellingId(null)}
-                            className="text-sm text-gray-500 hover:text-gray-700 px-3">Keep Order</button>
+                            className="text-sm text-gray-500 hover:text-gray-700 px-3">{t.ordKeepOrder}</button>
                         </div>
                       </div>
                     )}
@@ -413,7 +422,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
                           <button key={action} type="button" disabled={acting === order.id}
                             onClick={() => performAction(order, action)}
                             className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 ${cls}`}>
-                            {acting === order.id ? 'Working…' : label}
+                            {acting === order.id ? t.ordWorking : label}
                           </button>
                         ))}
                       </div>
@@ -433,7 +442,7 @@ export function ShopOrdersClient({ role, shopAddress }: Props) {
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+          <span className="text-sm text-gray-600">{t.ordPageOf.replace('{page}', String(page)).replace('{total}', String(totalPages))}</span>
           <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
             <ChevronRight className="h-4 w-4" />

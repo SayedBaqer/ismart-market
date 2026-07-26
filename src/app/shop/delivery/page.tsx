@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Truck, Package, Phone, MapPin, Check, X, RefreshCw, User } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface DeliveryOrder {
   id: string
@@ -25,14 +26,16 @@ interface StaffUser {
   role: string
 }
 
-const DELIVERY_STATUS_CONFIG = {
-  NOT_ASSIGNED: { label: 'Unassigned', color: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
-  ASSIGNED: { label: 'Assigned', color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
-  PICKED_UP: { label: 'Picked Up', color: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' },
-  OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
-  DELIVERED: { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
-  FAILED: { label: 'Failed', color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
-  RETURNED: { label: 'Returned', color: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500' },
+function deliveryStatusConfig(t: ReturnType<typeof useShopT>) {
+  return {
+    NOT_ASSIGNED: { label: t.delStatusUnassigned, color: 'bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
+    ASSIGNED: { label: t.delStatusAssigned, color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
+    PICKED_UP: { label: t.delStatusPickedUp, color: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' },
+    OUT_FOR_DELIVERY: { label: t.delStatusOutForDelivery, color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+    DELIVERED: { label: t.delStatusDelivered, color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+    FAILED: { label: t.delStatusFailed, color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+    RETURNED: { label: t.delStatusReturned, color: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500' },
+  }
 }
 
 const NEXT_STATUS: Record<string, string> = {
@@ -42,6 +45,8 @@ const NEXT_STATUS: Record<string, string> = {
 }
 
 export default function DeliveryBoardPage() {
+  const t = useShopT()
+  const DELIVERY_STATUS_CONFIG = deliveryStatusConfig(t)
   const [orders, setOrders] = useState<DeliveryOrder[]>([])
   const [staff, setStaff] = useState<StaffUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -110,9 +115,9 @@ export default function DeliveryBoardPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Truck className="h-5 w-5 text-purple-600" />
-            Delivery Board
+            {t.delTitle}
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{filtered.length} orders · tap to update</p>
+          <p className="text-xs text-gray-500 mt-0.5">{filtered.length} {t.delOrdersTapUpdate}</p>
         </div>
         <button onClick={load} className="rounded-xl p-2 bg-gray-100 hover:bg-gray-200 transition-colors">
           <RefreshCw className={`h-4 w-4 text-gray-600 ${loading ? 'animate-spin' : ''}`} />
@@ -122,10 +127,10 @@ export default function DeliveryBoardPage() {
       {/* Filter tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {[
-          { id: 'active', label: 'Active', count: orders.filter((o) => !['DELIVERED', 'FAILED', 'RETURNED'].includes(o.deliveryStatus)).length },
-          { id: 'done', label: 'Delivered', count: orders.filter((o) => o.deliveryStatus === 'DELIVERED').length },
-          { id: 'issues', label: 'Issues', count: orders.filter((o) => ['FAILED', 'RETURNED'].includes(o.deliveryStatus)).length },
-          { id: 'all', label: 'All', count: orders.length },
+          { id: 'active', label: t.delFilterActive, count: orders.filter((o) => !['DELIVERED', 'FAILED', 'RETURNED'].includes(o.deliveryStatus)).length },
+          { id: 'done', label: t.delFilterDelivered, count: orders.filter((o) => o.deliveryStatus === 'DELIVERED').length },
+          { id: 'issues', label: t.delFilterIssues, count: orders.filter((o) => ['FAILED', 'RETURNED'].includes(o.deliveryStatus)).length },
+          { id: 'all', label: t.delFilterAll, count: orders.length },
         ].map((f) => (
           <button
             key={f.id}
@@ -148,12 +153,12 @@ export default function DeliveryBoardPage() {
       {loading ? (
         <div className="text-center py-12 text-gray-400">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-          <p className="text-sm">Loading orders…</p>
+          <p className="text-sm">{t.delLoadingOrders}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
           <Truck className="h-12 w-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">No orders in this category</p>
+          <p className="text-gray-500 font-medium">{t.delNoOrders}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -181,10 +186,10 @@ export default function DeliveryBoardPage() {
                   {/* Customer */}
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-gray-400 shrink-0" />
-                    <span className="font-medium text-gray-800">{order.customerName ?? 'Guest'}</span>
+                    <span className="font-medium text-gray-800">{order.customerName ?? t.delGuest}</span>
                     {order.customerEmail && (
                       <a href={`mailto:${order.customerEmail}`} className="text-blue-500 text-xs hover:underline ml-auto">
-                        Contact
+                        {t.delContact}
                       </a>
                     )}
                   </div>
@@ -225,7 +230,7 @@ export default function DeliveryBoardPage() {
                         disabled={isUpdating}
                         className="flex-1 text-xs rounded-lg border border-gray-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
-                        <option value="">— Unassigned —</option>
+                        <option value="">{t.delUnassigned}</option>
                         {deliveryStaff.map((s) => (
                           <option key={s.id} value={s.id}>{s.name ?? s.email}</option>
                         ))}
@@ -237,7 +242,7 @@ export default function DeliveryBoardPage() {
                   {isDeliveryPerson && order.assignedTo && (
                     <div className="flex items-center gap-2 text-xs text-gray-500">
                       <Truck className="h-3.5 w-3.5" />
-                      Assigned to: <span className="font-medium text-gray-700">{order.assignedTo.name}</span>
+                      {t.delAssignedTo} <span className="font-medium text-gray-700">{order.assignedTo.name}</span>
                     </div>
                   )}
                 </div>
@@ -265,12 +270,12 @@ export default function DeliveryBoardPage() {
                   )}
                   {order.deliveryStatus === 'NOT_ASSIGNED' && isSales && (
                     <div className="flex-1 text-center text-xs text-gray-400 py-2.5">
-                      Assign a delivery person above
+                      {t.delAssignHint}
                     </div>
                   )}
                   {order.deliveryStatus === 'DELIVERED' && (
                     <div className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-semibold py-2.5">
-                      <Check className="h-4 w-4" /> Delivered
+                      <Check className="h-4 w-4" /> {t.delDelivered}
                     </div>
                   )}
                 </div>
