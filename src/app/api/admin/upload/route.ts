@@ -3,7 +3,8 @@ import { auth } from '@/auth'
 import sharp from 'sharp'
 import { uploadImageBuffer } from '@/lib/upload'
 
-const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+const ALLOWED_IMAGES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+const ALLOWED_DOCS = new Set(['application/pdf'])
 const MAX_BYTES = 10 * 1024 * 1024
 
 export async function POST(req: NextRequest) {
@@ -13,19 +14,26 @@ export async function POST(req: NextRequest) {
   const data = await req.formData()
   const file = data.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
-  if (!ALLOWED.has(file.type)) return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
+  if (!ALLOWED_IMAGES.has(file.type) && !ALLOWED_DOCS.has(file.type)) {
+    return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
+  }
   if (file.size > MAX_BYTES) return NextResponse.json({ error: 'Max 10 MB' }, { status: 400 })
 
   const buffer = Buffer.from(await file.arrayBuffer())
-  const isGif = file.type === 'image/gif'
-  const processed = isGif
-    ? buffer
-    : await sharp(buffer).resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer()
-
-  const ext = isGif ? 'gif' : 'webp'
-  const contentType = isGif ? 'image/gif' : 'image/webp'
 
   try {
+    if (file.type === 'application/pdf') {
+      const url = await uploadImageBuffer(buffer, 'application/pdf', 'pdf')
+      return NextResponse.json({ url })
+    }
+
+    const isGif = file.type === 'image/gif'
+    const processed = isGif
+      ? buffer
+      : await sharp(buffer).resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer()
+
+    const ext = isGif ? 'gif' : 'webp'
+    const contentType = isGif ? 'image/gif' : 'image/webp'
     const url = await uploadImageBuffer(processed, contentType, ext)
     return NextResponse.json({ url })
   } catch (err) {

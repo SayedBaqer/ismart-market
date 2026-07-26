@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { generateUniqueUsername } from '@/lib/services/user.service'
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -23,13 +24,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     name?: string; email?: string; username?: string; password?: string; role?: string
   }
 
-  if (!email || !username || !password || !role) {
-    return NextResponse.json({ error: 'Email, username, password and role are required' }, { status: 400 })
+  if (!email || !password || !role) {
+    return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
   }
   if (!VALID_ROLES.includes(role as typeof VALID_ROLES[number])) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
   }
-  if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
+  if (username && !/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
     return NextResponse.json({ error: 'Username must be 3-32 characters (letters, numbers, dot, dash, underscore)' }, { status: 400 })
   }
   if (password.length < 8) {
@@ -37,10 +38,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   // Username is the unique login key — admin-created accounts can share an email
-  // with other accounts in the same shop, same as owner-created ones.
-  const usernameTaken = await prisma.user.findUnique({ where: { username } })
-  if (usernameTaken) {
-    return NextResponse.json({ error: `Username "${username}" is already taken` }, { status: 409 })
+  // with other accounts in the same shop, same as owner-created ones. Email is the
+  // primary field; username is optional and auto-generated when left blank.
+  let finalUsername = username
+  if (finalUsername) {
+    const usernameTaken = await prisma.user.findUnique({ where: { username: finalUsername } })
+    if (usernameTaken) {
+      return NextResponse.json({ error: `Username "${finalUsername}" is already taken` }, { status: 409 })
+    }
+  } else {
+    finalUsername = await generateUniqueUsername(email)
   }
 
   // Admin-created accounts bypass plan quotas by design — the platform admin has full control.
@@ -49,7 +56,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     data: {
       name: name?.trim() || null,
       email: email.trim(),
-      username,
+      username: finalUsername,
       passwordHash: hash,
       role: role as typeof VALID_ROLES[number],
       isActive: true,

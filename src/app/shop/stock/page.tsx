@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Package, RefreshCw, Search, Save, Tag,
-  AlertTriangle, TrendingDown, Globe,
+  AlertTriangle, TrendingDown, Globe, PlusCircle, MinusCircle, ListChecks, Boxes,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,6 +25,13 @@ export default function ShopStockPage() {
   const [priceEdits, setPriceEdits] = useState<Record<string, { price: string; comparePrice: string }>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const [adjustingId, setAdjustingId] = useState<string | null>(null)
+  const [adjustMode, setAdjustMode] = useState<'add' | 'remove' | 'set'>('add')
+  const [adjustQty, setAdjustQty] = useState('')
+  const [adjustCost, setAdjustCost] = useState('')
+  const [adjustBusy, setAdjustBusy] = useState(false)
+  const [adjustError, setAdjustError] = useState('')
 
   const dirtyCount = Object.keys(priceEdits).length
 
@@ -69,6 +76,40 @@ export default function ShopStockPage() {
       load()
     }
     setSaving(false)
+  }
+
+  function openAdjust(rowId: string) {
+    setAdjustingId(adjustingId === rowId ? null : rowId)
+    setAdjustMode('add')
+    setAdjustQty('')
+    setAdjustCost('')
+    setAdjustError('')
+  }
+
+  async function applyAdjust(productId: string) {
+    const qty = parseFloat(adjustQty)
+    if (!qty || qty <= 0) { setAdjustError('Enter a valid quantity'); return }
+    setAdjustBusy(true)
+    setAdjustError('')
+    const res = await fetch('/api/shop/stock/adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: adjustMode,
+        productId,
+        qty,
+        ...(adjustMode === 'add' && adjustCost ? { unitCostBhd: parseFloat(adjustCost) || 0 } : {}),
+      }),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      setAdjustError(d.error ?? 'Failed to adjust stock')
+      setAdjustBusy(false)
+      return
+    }
+    setAdjustingId(null)
+    setAdjustBusy(false)
+    load()
   }
 
   const lowCount = rows.filter((r) => r.threshold != null && r.currentQty <= r.threshold && r.currentQty > 0).length
@@ -188,7 +229,7 @@ export default function ShopStockPage() {
                   </div>
 
                   {/* Stats row */}
-                  <div className="flex gap-4 mb-3 text-sm">
+                  <div className="flex items-end gap-4 mb-3 text-sm">
                     <div>
                       <p className="text-xs text-gray-400">Qty</p>
                       <p className={`text-lg font-bold tabular-nums ${isOut ? 'text-red-500' : isLow ? 'text-amber-600' : 'text-gray-800'}`}>
@@ -202,7 +243,68 @@ export default function ShopStockPage() {
                         {row.avgCostBhd > 0 ? `${row.avgCostBhd.toFixed(3)} BHD` : '—'}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => openAdjust(row.id)}
+                      className="ml-auto flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                    >
+                      <Boxes className="h-3.5 w-3.5" /> Adjust Stock
+                    </button>
                   </div>
+
+                  {/* Stock adjustment panel */}
+                  {adjustingId === row.id && (
+                    <div className="mb-3 rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-2">
+                      {adjustError && <p className="text-xs text-red-600">{adjustError}</p>}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([
+                          { mode: 'add' as const, label: 'Add', icon: PlusCircle },
+                          { mode: 'remove' as const, label: 'Remove', icon: MinusCircle },
+                          { mode: 'set' as const, label: 'Set exact', icon: ListChecks },
+                        ]).map(({ mode, label, icon: Icon }) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setAdjustMode(mode)}
+                            className={`flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${
+                              adjustMode === mode ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600'
+                            }`}
+                          >
+                            <Icon className="h-3.5 w-3.5" /> {label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={adjustQty}
+                          onChange={(e) => setAdjustQty(e.target.value)}
+                          placeholder={adjustMode === 'set' ? 'New total quantity' : 'Quantity'}
+                          className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        />
+                        {adjustMode === 'add' && (
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.001}
+                            value={adjustCost}
+                            onChange={(e) => setAdjustCost(e.target.value)}
+                            placeholder="Unit cost (optional)"
+                            className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          />
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => applyAdjust(row.id)}
+                        disabled={adjustBusy}
+                        className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {adjustBusy ? 'Applying…' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Translate link */}
                   <div className="mb-3">

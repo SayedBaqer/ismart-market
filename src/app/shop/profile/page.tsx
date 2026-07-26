@@ -1,17 +1,20 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { Store, Save, MapPin, Plus, Trash2, Phone, Mail } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Store, Save, MapPin, Plus, Trash2, Phone, Mail, Link2, Check, X, FileText, Upload, Loader2 } from 'lucide-react'
 
 interface ShopProfile {
   id: string
   name: string
+  slug: string
   description: string | null
   email: string | null
   phone: string | null
   address: string | null
   logoUrl: string | null
   plan: string
+  crNumber: string | null
+  crCertificateUrl: string | null
 }
 
 interface Branch {
@@ -30,10 +33,17 @@ export default function ShopProfilePage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [slug, setSlug] = useState('')
+  const [crNumber, setCrNumber] = useState('')
+  const [crCertificateUrl, setCrCertificateUrl] = useState('')
+  const [uploadingCert, setUploadingCert] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
+  const slugCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [branches, setBranches] = useState<Branch[]>([])
   const [branchLimit, setBranchLimit] = useState(1)
@@ -55,6 +65,9 @@ export default function ShopProfilePage() {
       setEmail(shop.email ?? '')
       setPhone(shop.phone ?? '')
       setAddress(shop.address ?? '')
+      setSlug(shop.slug ?? '')
+      setCrNumber(shop.crNumber ?? '')
+      setCrCertificateUrl(shop.crCertificateUrl ?? '')
     }
     if (branchesRes.ok) {
       const data = await branchesRes.json()
@@ -68,12 +81,13 @@ export default function ShopProfilePage() {
 
   async function saveProfile() {
     if (!name.trim()) { setError('Shop name is required'); return }
+    if (slugStatus === 'taken') { setError('That shop URL is already taken'); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/shop/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, email, phone, address }),
+      body: JSON.stringify({ name, description, email, phone, address, slug, crNumber, crCertificateUrl }),
     })
     if (!res.ok) {
       const d = await res.json()
@@ -83,6 +97,34 @@ export default function ShopProfilePage() {
       setTimeout(() => setSaved(false), 2500)
     }
     setSaving(false)
+  }
+
+  function onSlugChange(value: string) {
+    const cleaned = value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+    setSlug(cleaned)
+    if (slugCheckTimer.current) clearTimeout(slugCheckTimer.current)
+    if (cleaned === profile?.slug || cleaned.length < 3) { setSlugStatus('idle'); return }
+    setSlugStatus('checking')
+    slugCheckTimer.current = setTimeout(async () => {
+      const res = await fetch(`/api/shop/profile/slug-check?slug=${encodeURIComponent(cleaned)}`)
+      const d = await res.json()
+      setSlugStatus(d.available ? 'available' : 'taken')
+    }, 400)
+  }
+
+  async function uploadCertificate(file: File) {
+    setUploadingCert(true)
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch('/api/admin/upload', { method: 'POST', body: form })
+    if (res.ok) {
+      const d = await res.json()
+      setCrCertificateUrl(d.url)
+    } else {
+      const d = await res.json()
+      setError(d.error ?? 'Failed to upload certificate')
+    }
+    setUploadingCert(false)
   }
 
   async function addBranch() {
@@ -171,6 +213,49 @@ export default function ShopProfilePage() {
           <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><MapPin className="h-3 w-3" /> Main Address</label>
           <input value={address} onChange={(e) => setAddress(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-600 flex items-center gap-1"><Link2 className="h-3 w-3" /> Shop URL</label>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="text-sm text-gray-400 shrink-0">/shops/</span>
+            <div className="relative flex-1">
+              <input value={slug} onChange={(e) => onSlugChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 pr-8 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              {slugStatus === 'checking' && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 animate-spin" />}
+              {slugStatus === 'available' && <Check className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />}
+              {slugStatus === 'taken' && <X className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
+            </div>
+          </div>
+          {slugStatus === 'taken' && <p className="text-xs text-red-600 mt-1">That URL is already taken</p>}
+          {slugStatus === 'available' && <p className="text-xs text-emerald-600 mt-1">Available</p>}
+        </div>
+      </div>
+
+      {/* CR / Business registration */}
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><FileText className="h-4 w-4 text-gray-500" /> Commercial Registration</h2>
+        <div>
+          <label className="text-xs font-semibold text-gray-600">CR Number</label>
+          <input value={crNumber} onChange={(e) => setCrNumber(e.target.value)}
+            placeholder="e.g. 123456-1"
+            className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-600">CR Certificate (image or PDF)</label>
+          <div className="mt-1 flex items-center gap-3">
+            <label className="flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-2.5 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 cursor-pointer transition-colors">
+              <Upload className="h-4 w-4" />
+              {uploadingCert ? 'Uploading…' : 'Upload file'}
+              <input type="file" accept="image/*,application/pdf" className="hidden"
+                disabled={uploadingCert}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCertificate(f) }} />
+            </label>
+            {crCertificateUrl && (
+              <a href={crCertificateUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                View uploaded certificate
+              </a>
+            )}
+          </div>
         </div>
       </div>
 

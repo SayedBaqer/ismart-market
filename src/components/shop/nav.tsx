@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, ShoppingCart, Package, Box, Users,
-  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Instagram, KeyRound,
+  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Instagram, KeyRound, Globe2,
 } from 'lucide-react'
 import { useState } from 'react'
 
 interface ShopNavProps {
-  shop: { id: string; name: string; logoUrl: string | null }
+  shop: { id: string; name: string; logoUrl: string | null; slug: string }
   role: string
   user: { name?: string | null; email?: string | null }
 }
@@ -95,6 +95,24 @@ export function ShopPortalNav({ shop, role, user }: ShopNavProps) {
             <p className="text-xs text-white/50 truncate">{user.email}</p>
           </div>
         </div>
+        <a
+          href={`/shops/${shop.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <Store className="h-4 w-4" />
+          View My Shop Page
+        </a>
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <Globe2 className="h-4 w-4" />
+          View Platform Home
+        </a>
         <button
           onClick={() => signOut({ callbackUrl: '/admin/login' })}
           className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"

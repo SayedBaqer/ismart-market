@@ -6,13 +6,14 @@ import { useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Truck, MoreHorizontal, X,
   Package, Box, Users, FileText, BarChart3, UserPlus, Newspaper,
-  Settings, LogOut, Instagram, Store, KeyRound,
+  Settings, LogOut, Instagram, Store, KeyRound, Globe2,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 interface Props {
   role: string
   shopName: string
+  shopSlug: string
   pendingCount?: number
 }
 
@@ -38,7 +39,7 @@ const MORE_ITEMS = (role: string) => [
   { href: '/shop/account', label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },
 ].filter((t) => t.roles.includes(role))
 
-export function ShopBottomNav({ role, shopName, pendingCount = 0 }: Props) {
+export function ShopBottomNav({ role, shopName, shopSlug, pendingCount = 0 }: Props) {
   const pathname = usePathname()
   const [showMore, setShowMore] = useState(false)
   const primaryTabs = PRIMARY_TABS(role)
@@ -89,8 +90,18 @@ export function ShopBottomNav({ role, shopName, pendingCount = 0 }: Props) {
               })}
             </div>
 
-            {/* Sign out */}
-            <div className="border-t border-gray-100 px-4 pb-6 pt-3">
+            {/* Platform links + sign out */}
+            <div className="border-t border-gray-100 px-4 pb-6 pt-3 space-y-1">
+              <a href={`/shops/${shopSlug}`} target="_blank" rel="noopener noreferrer"
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
+                <Store className="h-4 w-4" />
+                <span className="text-sm font-semibold">View My Shop Page</span>
+              </a>
+              <a href="/" target="_blank" rel="noopener noreferrer"
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors">
+                <Globe2 className="h-4 w-4" />
+                <span className="text-sm font-semibold">View Platform Home</span>
+              </a>
               <button type="button" onClick={() => signOut({ callbackUrl: '/admin/login' })}
                 className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-red-600 hover:bg-red-50 transition-colors">
                 <LogOut className="h-4 w-4" />

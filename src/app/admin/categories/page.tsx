@@ -235,7 +235,8 @@ export default function CategoriesPage() {
               <p className="text-sm text-gray-400">No categories yet</p>
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-500">
                   <th className="px-4 py-3 text-left font-medium">Name</th>
@@ -305,6 +306,7 @@ export default function CategoriesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

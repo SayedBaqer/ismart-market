@@ -1,7 +1,7 @@
 'use client'
 
-import { useCartStore, cartSubtotal, cartItemCount } from '@/lib/store/cart'
-import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
+import { useCartStore, cartItemCount, selectedSubtotal } from '@/lib/store/cart'
+import { X, Minus, Plus, Trash2, ShoppingBag, Check } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useStoreT } from '@/lib/i18n/store-context'
@@ -12,10 +12,12 @@ export function CartSidebar() {
   const closeCart = useCartStore((s) => s.closeCart)
   const removeItem = useCartStore((s) => s.removeItem)
   const updateQty = useCartStore((s) => s.updateQty)
+  const toggleSelected = useCartStore((s) => s.toggleSelected)
   const t = useStoreT()
 
-  const subtotal = cartSubtotal(items)
+  const subtotal = selectedSubtotal(items)
   const count = cartItemCount(items)
+  const selectedCount = items.filter((i) => i.selected).length
 
   return (
     <>
@@ -59,7 +61,17 @@ export function CartSidebar() {
           ) : (
             <ul className="space-y-4">
               {items.map((item) => (
-                <li key={item.productId} className="flex gap-3">
+                <li key={item.productId} className={`flex gap-3 rounded-xl p-1.5 transition-colors ${item.selected ? '' : 'opacity-50'}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSelected(item.productId)}
+                    title={item.selected ? 'Remove from this order' : 'Include in this order'}
+                    className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+                      item.selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    {item.selected && <Check className="h-3 w-3 text-white" />}
+                  </button>
                   <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
                     {item.imageUrl ? (
                       <Image
@@ -120,14 +132,19 @@ export function CartSidebar() {
         {items.length > 0 && (
           <div className="border-t border-gray-100 px-4 py-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">{t.subtotal}</span>
+              <span className="text-gray-500">{t.subtotal} ({selectedCount} selected)</span>
               <span className="font-semibold text-gray-900">{subtotal.toFixed(3)} BHD</span>
             </div>
             <p className="text-xs text-gray-400">{t.shippingNote}</p>
             <Link
               href="/checkout"
-              onClick={closeCart}
-              className="block w-full rounded-xl bg-blue-600 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              onClick={(e) => { if (selectedCount === 0) e.preventDefault(); else closeCart() }}
+              aria-disabled={selectedCount === 0}
+              className={`block w-full rounded-xl py-3 text-center text-sm font-semibold transition-colors ${
+                selectedCount === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
               {t.checkout}
             </Link>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { generateUniqueUsername } from '@/lib/services/user.service'
 
 // Free plan quotas — super admin can raise these via shop.meta.staffQuota
 const FREE_QUOTA = { STAFF: 1, CASHIER: 1 } // 1 sales + 1 delivery
@@ -61,8 +62,8 @@ export async function POST(req: NextRequest) {
     name?: string; email?: string; username?: string; password?: string; role?: string
   }
 
-  if (!email || !username || !password || !role) {
-    return NextResponse.json({ error: 'Email, username, password and role are required' }, { status: 400 })
+  if (!email || !password || !role) {
+    return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
   }
 
   // Only STAFF (sales) and CASHIER (delivery) can be added this way
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid role. Only Sales (STAFF) or Delivery (CASHIER) accounts can be created.' }, { status: 400 })
   }
 
-  if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
+  if (username && !/^[a-zA-Z0-9_.-]{3,32}$/.test(username)) {
     return NextResponse.json({ error: 'Username must be 3-32 characters (letters, numbers, dot, dash, underscore)' }, { status: 400 })
   }
 
@@ -96,10 +97,16 @@ export async function POST(req: NextRequest) {
   }
 
   // Username is the unique login key — multiple accounts (sales, delivery, ...) can share
-  // the same shop email, so we don't look accounts up by email here.
-  const usernameTaken = await prisma.user.findUnique({ where: { username } })
-  if (usernameTaken) {
-    return NextResponse.json({ error: `Username "${username}" is already taken` }, { status: 409 })
+  // the same shop email, so we don't look accounts up by email here. Email is the primary
+  // field on the form; username is optional and auto-generated when left blank.
+  let finalUsername = username
+  if (finalUsername) {
+    const usernameTaken = await prisma.user.findUnique({ where: { username: finalUsername } })
+    if (usernameTaken) {
+      return NextResponse.json({ error: `Username "${finalUsername}" is already taken` }, { status: 409 })
+    }
+  } else {
+    finalUsername = await generateUniqueUsername(email)
   }
 
   const hash = await bcrypt.hash(password, 12)
@@ -107,7 +114,7 @@ export async function POST(req: NextRequest) {
     data: {
       name: name?.trim() || null,
       email,
-      username,
+      username: finalUsername,
       passwordHash: hash,
       role: role as 'STAFF' | 'CASHIER',
       isActive: true,

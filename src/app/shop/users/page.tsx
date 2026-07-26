@@ -77,7 +77,7 @@ export default function ShopUsersPage() {
   useEffect(() => { load() }, [load])
 
   async function addUser() {
-    if (!form.email || !form.username || !form.password) { setError('Email, username and password required'); return }
+    if (!form.email || !form.password) { setError('Email and password required'); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/shop/staff', {
@@ -286,11 +286,11 @@ export default function ShopUsersPage() {
                 hint="Can be the same email as another account in your shop"
               />
               <Input
-                label="Username *"
+                label="Username (optional)"
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                placeholder="e.g. shop-sales1"
-                hint="Must be unique — this is what they log in with"
+                placeholder="Auto-generated if left blank"
+                hint="Only needed to tell apart accounts sharing an email"
               />
               <Input
                 label="Password *"

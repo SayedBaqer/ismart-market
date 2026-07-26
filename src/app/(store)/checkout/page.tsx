@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useCartStore, cartSubtotal } from '@/lib/store/cart'
-import { ShoppingBag, Truck, CreditCard, Building2, ChevronRight } from 'lucide-react'
+import { useCartStore, selectedSubtotal } from '@/lib/store/cart'
+import { ShoppingBag, Truck, CreditCard, Building2, ChevronRight, Check } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useStoreT } from '@/lib/i18n/store-context'
@@ -11,7 +11,8 @@ import { useStoreT } from '@/lib/i18n/store-context'
 export default function CheckoutPage() {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
-  const clearCart = useCartStore((s) => s.clearCart)
+  const removeItem = useCartStore((s) => s.removeItem)
+  const toggleSelected = useCartStore((s) => s.toggleSelected)
   const t = useStoreT()
 
   const [form, setForm] = useState({
@@ -31,7 +32,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const subtotal = cartSubtotal(items)
+  const selectedItems = items.filter((i) => i.selected)
+  const subtotal = selectedSubtotal(items)
 
   if (items.length === 0) {
     return (
@@ -47,6 +49,10 @@ export default function CheckoutPage() {
 
   async function placeOrder(e?: React.FormEvent) {
     e?.preventDefault()
+    if (selectedItems.length === 0) {
+      setError('Select at least one item to order')
+      return
+    }
     if (!form.customerName || !form.customerPhone || !form.line1) {
       setError(t.orderRequiredFields)
       return
@@ -72,7 +78,7 @@ export default function CheckoutPage() {
         },
         paymentMethod: form.paymentMethod,
         notes: form.notes || undefined,
-        items: items.map((i) => ({ productId: i.productId, qty: i.qty })),
+        items: selectedItems.map((i) => ({ productId: i.productId, qty: i.qty })),
       }),
     })
 
@@ -84,7 +90,8 @@ export default function CheckoutPage() {
     }
 
     const order = await res.json()
-    clearCart()
+    // Only remove the items that were actually ordered — anything left unselected stays in the cart
+    selectedItems.forEach((i) => removeItem(i.productId))
     router.push(`/order-confirmation?order=${order.orderNumber}`)
   }
 
@@ -241,10 +248,23 @@ export default function CheckoutPage() {
         {/* Right: Order Summary */}
         <div className="space-y-4">
           <div className="sticky top-24 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-semibold text-gray-900">{t.orderSummary}</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-900">{t.orderSummary}</h2>
+              <span className="text-xs text-gray-400">{selectedItems.length} of {items.length} selected</span>
+            </div>
             <ul className="space-y-3">
               {items.map((item) => (
-                <li key={item.productId} className="flex items-center gap-3">
+                <li key={item.productId} className={`flex items-center gap-3 transition-opacity ${item.selected ? '' : 'opacity-50'}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggleSelected(item.productId)}
+                    title={item.selected ? 'Remove from this order' : 'Include in this order'}
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+                      item.selected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    {item.selected && <Check className="h-3 w-3 text-white" />}
+                  </button>
                   <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
                     {item.imageUrl ? (
                       <Image
@@ -300,7 +320,7 @@ export default function CheckoutPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || selectedItems.length === 0}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {loading ? t.placingOrder : (

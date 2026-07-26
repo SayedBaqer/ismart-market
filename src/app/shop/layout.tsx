@@ -41,7 +41,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
       </main>
 
       {/* Mobile bottom nav */}
-      <ShopBottomNav role={role} shopName={shop.name} pendingCount={pendingCount} />
+      <ShopBottomNav role={role} shopName={shop.name} shopSlug={shop.slug} pendingCount={pendingCount} />
     </div>
   )
 }

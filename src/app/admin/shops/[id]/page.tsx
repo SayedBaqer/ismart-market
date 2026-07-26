@@ -257,8 +257,8 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   async function addTeamMember() {
-    if (!addUserForm.email || !addUserForm.username || !addUserForm.password) {
-      setAddUserError('Email, username and password are required')
+    if (!addUserForm.email || !addUserForm.password) {
+      setAddUserError('Email and password are required')
       return
     }
     setAddingUser(true)
@@ -676,9 +676,9 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                 </select>
                 <input placeholder="Name" value={addUserForm.name} onChange={(e) => setAddUserForm((v) => ({ ...v, name: e.target.value }))}
                   className="col-span-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                <input placeholder="Email" value={addUserForm.email} onChange={(e) => setAddUserForm((v) => ({ ...v, email: e.target.value }))}
+                <input placeholder="Email *" value={addUserForm.email} onChange={(e) => setAddUserForm((v) => ({ ...v, email: e.target.value }))}
                   className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                <input placeholder="Username" value={addUserForm.username} onChange={(e) => setAddUserForm((v) => ({ ...v, username: e.target.value }))}
+                <input placeholder="Username (auto if blank)" value={addUserForm.username} onChange={(e) => setAddUserForm((v) => ({ ...v, username: e.target.value }))}
                   className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 <input type="password" placeholder="Password (min 8 chars)" value={addUserForm.password} onChange={(e) => setAddUserForm((v) => ({ ...v, password: e.target.value }))}
                   className="col-span-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />

@@ -26,6 +26,8 @@ model Shop {
   email       String?
   phone       String?
   address     String?
+  crNumber        String?  // Commercial Registration number (Bahrain business license)
+  crCertificateUrl String? // uploaded CR certificate document (image or PDF)
   currency    String     @default("BHD")
   language    String     @default("en")
   status      ShopStatus @default(PENDING)  // pending approval → active → suspended
