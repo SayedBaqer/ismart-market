@@ -83,6 +83,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true })
   }
 
+  // Capture which accounts belonged to this shop before unlinking them, so we can
+  // clean up ones that existed only for this shop (not shared with any other shop).
+  const shopUsers = await prisma.shopUser.findMany({ where: { shopId: id }, select: { userId: true } })
+  const candidateUserIds = [...new Set(shopUsers.map((su) => su.userId))]
+
   // Hard delete: detach (not delete) financial/history records so revenue and order
   // history survive as unowned rows, then remove the shop and its owned junction data.
   await prisma.$transaction([
@@ -96,6 +101,23 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     prisma.shopNews.deleteMany({ where: { shopId: id } }),
     prisma.shop.delete({ where: { id } }),
   ])
+
+  // Clean up accounts that existed only for this shop (owner/sales/delivery) — never
+  // platform admin accounts. Best-effort: try a real delete, fall back to deactivating
+  // if the account has other history (orders created, documents, etc.) referencing it.
+  for (const userId of candidateUserIds) {
+    const stillLinked = await prisma.shopUser.count({ where: { userId } })
+    if (stillLinked > 0) continue
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true, isActive: true } })
+    if (!user || ['SUPER_ADMIN', 'ADMIN'].includes(user.role)) continue
+    try {
+      await prisma.user.delete({ where: { id: userId } })
+    } catch {
+      if (user.isActive) {
+        await prisma.user.update({ where: { id: userId }, data: { isActive: false } }).catch(() => {})
+      }
+    }
+  }
 
   return NextResponse.json({ ok: true, deleted: true })
 }

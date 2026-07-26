@@ -31,7 +31,6 @@ export async function PATCH(req: NextRequest) {
       price: Number(incoming.price ?? current[plan].price) || 0,
       branches: Math.max(0, Math.round(Number(incoming.branches ?? current[plan].branches) || DEFAULT_PLAN_CONFIG[plan].branches)),
       ordersPerMonth: Math.max(0, Math.round(Number(incoming.ordersPerMonth ?? current[plan].ordersPerMonth) || DEFAULT_PLAN_CONFIG[plan].ordersPerMonth)),
-      ordersPerDay: Math.max(0, Math.round(Number(incoming.ordersPerDay ?? current[plan].ordersPerDay) || DEFAULT_PLAN_CONFIG[plan].ordersPerDay)),
     }
   }
 

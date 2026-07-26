@@ -31,12 +31,15 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
     where: { shopId: shop.id, status: 'PENDING' },
   })
 
-  // Plugins show as individual nav items (owner-only) — locked/disabled ones render greyed out
+  // Plugins show as individual nav items (owner-only) — locked/disabled ones render greyed out.
+  // 'analytics' is excluded here — it keeps its own fixed nav slot (visible to staff too)
+  // and is gated at the page level instead of as a standalone plugin nav entry.
   const effectivePlan = getEffectivePlan(shop.plan, shop.paymentStatus)
-  const [plugins, lang] = await Promise.all([
+  const [allPlugins, lang] = await Promise.all([
     role === 'MANAGER' ? getShopPluginStatus(shop.id, effectivePlan) : Promise.resolve([]),
     getStoreLang(),
   ])
+  const plugins = allPlugins.filter((p) => p.slug !== 'analytics')
 
   return (
     <div className="flex h-dvh overflow-hidden bg-gray-50" dir={lang === 'ar' ? 'rtl' : 'ltr'}>

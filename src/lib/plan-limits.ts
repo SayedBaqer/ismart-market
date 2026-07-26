@@ -14,18 +14,29 @@ export function getEffectivePlan(plan: ShopPlan, paymentStatus: ShopPaymentStatu
 // Setting table (key: platform.plans); these are the fallback defaults used
 // until an admin saves an override via /admin/plans. Per-shop overrides on top
 // of the (possibly admin-edited) base live in `shop.settings.quotas`.
+//
+// ordersPerMonth is the only order-volume input — ordersPerDay is always derived
+// from it (month / 30, rounded up) rather than set independently, so the two
+// numbers can never disagree with each other.
 export interface PlanFeatureLimits {
   price: number // BHD per month, shown to shop owners — 0 for FREE
   branches: number
   ordersPerMonth: number
-  ordersPerDay: number
+}
+
+export interface EffectivePlanLimits extends PlanFeatureLimits {
+  ordersPerDay: number // derived — not independently settable
+}
+
+export function deriveOrdersPerDay(ordersPerMonth: number): number {
+  return Math.max(1, Math.ceil(ordersPerMonth / 30))
 }
 
 export const DEFAULT_PLAN_CONFIG: Record<ShopPlan, PlanFeatureLimits> = {
-  FREE:       { price: 0,  branches: 1,   ordersPerMonth: 100,   ordersPerDay: 30 },
-  STARTER:    { price: 15, branches: 3,   ordersPerMonth: 500,   ordersPerDay: 100 },
-  BUSINESS:   { price: 35, branches: 10,  ordersPerMonth: 5000,  ordersPerDay: 500 },
-  ENTERPRISE: { price: 0,  branches: 999, ordersPerMonth: 99999, ordersPerDay: 99999 }, // 0 = "Contact us"
+  FREE:       { price: 0,  branches: 1,   ordersPerMonth: 100 },
+  STARTER:    { price: 15, branches: 3,   ordersPerMonth: 500 },
+  BUSINESS:   { price: 35, branches: 10,  ordersPerMonth: 5000 },
+  ENTERPRISE: { price: 0,  branches: 999, ordersPerMonth: 99999 }, // 0 = "Contact us"
 }
 
 const PLAN_CONFIG_KEY = 'platform.plans'
@@ -58,14 +69,15 @@ export async function savePlanConfig(config: Record<ShopPlan, PlanFeatureLimits>
 export async function getEffectiveFeatureLimits(
   plan: ShopPlan,
   shopSettings: unknown,
-): Promise<PlanFeatureLimits> {
+): Promise<EffectivePlanLimits> {
   const config = await getPlanConfig()
   const base = config[plan]
   const quotas = ((shopSettings as { quotas?: Partial<PlanFeatureLimits> } | null)?.quotas) ?? {}
+  const ordersPerMonth = quotas.ordersPerMonth ?? base.ordersPerMonth
   return {
     price: quotas.price ?? base.price,
     branches: quotas.branches ?? base.branches,
-    ordersPerMonth: quotas.ordersPerMonth ?? base.ordersPerMonth,
-    ordersPerDay: quotas.ordersPerDay ?? base.ordersPerDay,
+    ordersPerMonth,
+    ordersPerDay: deriveOrdersPerDay(ordersPerMonth),
   }
 }

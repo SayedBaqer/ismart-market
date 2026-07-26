@@ -30,6 +30,15 @@ const DEFAULT_PLUGINS: DefaultPlugin[] = [
     minPlan: 'FREE',
   },
   {
+    slug: 'analytics',
+    name: 'Analytics',
+    version: '1.0.0',
+    description: 'Revenue, order, and product performance dashboard for your shop.',
+    category: 'analytics',
+    icon: 'BarChart3',
+    minPlan: 'FREE', // admin can raise this in /admin/plugins to make it a paid feature
+  },
+  {
     slug: 'statistics-pro',
     name: 'Pro Statistics',
     version: '1.0.0',

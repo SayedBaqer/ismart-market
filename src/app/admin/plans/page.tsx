@@ -7,7 +7,12 @@ interface PlanRow {
   price: number
   branches: number
   ordersPerMonth: number
-  ordersPerDay: number
+}
+
+// Orders/day is always derived from orders/month (not independently settable) so the
+// two numbers can never disagree — matches the server-side deriveOrdersPerDay().
+function deriveOrdersPerDay(ordersPerMonth: number) {
+  return Math.max(1, Math.ceil(ordersPerMonth / 30))
 }
 
 type Plan = 'FREE' | 'STARTER' | 'BUSINESS' | 'ENTERPRISE'
@@ -96,7 +101,7 @@ export default function AdminPlansPage() {
                 {plan === 'ENTERPRISE' && <p className="text-xs text-gray-400 mt-1">0 shows as &quot;Contact us&quot; to shop owners</p>}
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-semibold text-gray-600">Branches</label>
                   <input type="number" min={0} value={row.branches}
@@ -104,18 +109,15 @@ export default function AdminPlansPage() {
                     className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-600">Orders/day</label>
-                  <input type="number" min={0} value={row.ordersPerDay}
-                    onChange={(e) => update(plan, 'ordersPerDay', e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">Orders/mo</label>
+                  <label className="text-xs font-semibold text-gray-600">Orders / month</label>
                   <input type="number" min={0} value={row.ordersPerMonth}
                     onChange={(e) => update(plan, 'ordersPerMonth', e.target.value)}
                     className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
               </div>
+              <p className="text-xs text-gray-400">
+                ≈ {deriveOrdersPerDay(row.ordersPerMonth).toLocaleString()} orders/day (derived automatically from the monthly limit — set one number, not two)
+              </p>
             </div>
           )
         })}

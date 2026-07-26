@@ -81,7 +81,14 @@ export default function ShopPluginsPage() {
                     <Icon className={`h-5 w-5 ${p.locked ? 'text-gray-400' : 'text-blue-600'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900">{p.name}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-gray-900">{p.name}</p>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        p.minPlan === 'FREE' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'
+                      }`}>
+                        {p.minPlan === 'FREE' ? 'Free' : `${p.minPlan}+`}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>
                   </div>
                 </div>

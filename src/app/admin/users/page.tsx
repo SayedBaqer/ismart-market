@@ -46,6 +46,21 @@ const PRESETS: Record<string, { label: string; caps: Record<string, boolean> }> 
   },
 }
 
+// Every grantable capability, grouped for the custom picker — mirrors src/lib/auth/capabilities.ts
+const CAPABILITY_GROUPS: { label: string; caps: string[] }[] = [
+  { label: 'Products', caps: ['products.view', 'products.create', 'products.edit', 'products.delete'] },
+  { label: 'Categories', caps: ['categories.view', 'categories.create', 'categories.edit', 'categories.delete'] },
+  { label: 'Stock', caps: ['stock.view', 'stock.adjust', 'stock.import', 'stock.batches.delete'] },
+  { label: 'Orders', caps: ['orders.view', 'orders.create', 'orders.edit', 'orders.update_status', 'orders.delete'] },
+  { label: 'Billing', caps: ['billing.view', 'billing.create', 'billing.edit', 'billing.delete', 'billing.payments'] },
+  { label: 'Customers', caps: ['customers.view', 'customers.create', 'customers.edit', 'customers.delete'] },
+  { label: 'Reports', caps: ['reports.view', 'reports.financial'] },
+  { label: 'Users', caps: ['users.view', 'users.create', 'users.edit', 'users.delete'] },
+  { label: 'Settings', caps: ['settings.view', 'settings.edit'] },
+  { label: 'Plugins', caps: ['plugins.manage'] },
+  { label: 'News', caps: ['news.view', 'news.create', 'news.edit', 'news.delete'] },
+]
+
 interface User {
   id: string
   name: string | null
@@ -62,6 +77,7 @@ const EMPTY_FORM = {
   password: '',
   role: 'STAFF' as Role,
   preset: '',
+  customCaps: {} as Record<string, boolean>,
   isActive: true,
 }
 
@@ -94,13 +110,25 @@ export default function UsersPage() {
 
   function openEdit(u: User) {
     setEditUser(u)
-    setForm({ name: u.name ?? '', email: u.email, password: '', role: u.role, preset: '', isActive: u.isActive })
+    const hasCaps = Object.keys(u.capabilities ?? {}).length > 0
+    // Existing custom grants (including ones no preset covers, like plugins.manage)
+    // load straight into the custom picker so they're visible and editable.
+    setForm({
+      name: u.name ?? '', email: u.email, password: '', role: u.role,
+      preset: hasCaps ? 'custom' : '',
+      customCaps: hasCaps ? u.capabilities : {},
+      isActive: u.isActive,
+    })
     setError('')
     setShowForm(true)
   }
 
   function applyPreset(presetKey: string) {
-    setForm((f) => ({ ...f, preset: presetKey }))
+    setForm((f) => ({ ...f, preset: presetKey, customCaps: presetKey === 'custom' ? f.customCaps : {} }))
+  }
+
+  function toggleCustomCap(cap: string) {
+    setForm((f) => ({ ...f, customCaps: { ...f.customCaps, [cap]: !f.customCaps[cap] } }))
   }
 
   async function save() {
@@ -109,7 +137,7 @@ export default function UsersPage() {
     setSaving(true)
     setError('')
 
-    const caps = form.preset ? PRESETS[form.preset]?.caps ?? {} : undefined
+    const caps = form.preset === 'custom' ? form.customCaps : form.preset ? PRESETS[form.preset]?.caps ?? {} : undefined
 
     const payload: Record<string, unknown> = {
       name: form.name,
@@ -226,11 +254,39 @@ export default function UsersPage() {
                     {preset.label}
                   </button>
                 ))}
+                <button
+                  onClick={() => applyPreset('custom')}
+                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${form.preset === 'custom' ? 'border-blue-600 bg-blue-50 text-blue-700 font-semibold' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                >
+                  Custom…
+                </button>
               </div>
-              {form.preset && (
+              {form.preset && form.preset !== 'custom' && (
                 <p className="mt-1 text-xs text-gray-500">
                   Granted: {Object.keys(PRESETS[form.preset]?.caps ?? {}).join(', ')}
                 </p>
+              )}
+              {form.preset === 'custom' && (
+                <div className="mt-3 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  {CAPABILITY_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">{group.label}</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {group.caps.map((cap) => (
+                          <label key={cap} className="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!form.customCaps[cap]}
+                              onChange={() => toggleCustomCap(cap)}
+                              className="rounded"
+                            />
+                            {cap}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
