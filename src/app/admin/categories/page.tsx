@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Pencil, Trash2, X, Check, Tag } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Tag, Languages, Loader2 } from 'lucide-react'
 
 interface Category {
   id: string
@@ -38,6 +38,7 @@ export default function CategoriesPage() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [autoTranslating, setAutoTranslating] = useState(false)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/categories')
@@ -68,6 +69,29 @@ export default function CategoriesPage() {
     })
     setError('')
     setShowForm(true)
+  }
+
+  async function autoTranslate() {
+    if (!form.name.trim()) { setError('Enter an English name first'); return }
+    setAutoTranslating(true)
+    setError('')
+    try {
+      const res = await fetch('/api/shop/products/auto-translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: form.name.trim(), description: form.description.trim() || undefined, targetLang: 'ar' }),
+      })
+      const d = await res.json() as { name: string | null; description: string | null; note?: string }
+      if (d.note) { setError(d.note); return }
+      // Auto-translate only fills empty fields — manual typing always overrides it
+      setForm((f) => ({
+        ...f,
+        nameAr: f.nameAr.trim() || d.name || f.nameAr,
+        descriptionAr: f.descriptionAr.trim() || d.description || f.descriptionAr,
+      }))
+    } finally {
+      setAutoTranslating(false)
+    }
   }
 
   async function save() {
@@ -189,13 +213,26 @@ export default function CategoriesPage() {
                 </select>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 border-t border-gray-100 pt-3">
+            <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-600">Arabic Translation</p>
+              <button
+                type="button"
+                onClick={autoTranslate}
+                disabled={autoTranslating}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {autoTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+                Auto-Translate
+              </button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 label="Arabic Name (الاسم بالعربية)"
                 dir="rtl"
                 value={form.nameAr}
                 onChange={(e) => setForm({ ...form, nameAr: e.target.value })}
                 placeholder="مثال: حاضنات"
+                hint="Auto-translate fills this if empty — typing here always overrides it"
               />
               <Input
                 label="Arabic Description (الوصف بالعربية)"
