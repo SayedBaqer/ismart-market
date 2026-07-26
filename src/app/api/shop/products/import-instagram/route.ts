@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { rehostImageFromUrl } from '@/lib/upload'
+import { isPluginEnabledForShop } from '@/lib/services/plugin.service'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -13,6 +14,10 @@ export async function POST(req: NextRequest) {
   })
   if (!su || !['MANAGER', 'STAFF'].includes(su.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (!(await isPluginEnabledForShop(su.shopId, 'instagram-import'))) {
+    return NextResponse.json({ error: 'Instagram Import plugin is not enabled for your shop' }, { status: 403 })
   }
 
   const body = await req.json()

@@ -241,6 +241,7 @@ export function AdminTopBar({ user, role, capabilities }: Props) {
               role={role}
               capabilities={(capabilities ?? {}) as Record<Capability, boolean>}
               onNavigate={() => setShowMobileMenu(false)}
+              allowCollapse={false}
             />
           </div>
         </div>

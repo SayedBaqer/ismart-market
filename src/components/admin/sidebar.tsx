@@ -95,25 +95,30 @@ interface Props {
   role: UserRole
   capabilities: Record<string, boolean>
   onNavigate?: () => void
+  /** Set false for the mobile drawer copy — it must never collapse to icon-only width
+   *  or share the desktop collapse state, since the drawer itself handles open/close. */
+  allowCollapse?: boolean
 }
 
-export function AdminSidebar({ role, capabilities, onNavigate }: Props) {
+export function AdminSidebar({ role, capabilities, onNavigate, allowCollapse = true }: Props) {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [badges, setBadges] = useState<Record<string, number>>({})
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsedState, setCollapsedState] = useState(false)
+  const collapsed = allowCollapse && collapsedState
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Persist collapsed state across sessions
+  // Persist collapsed state across sessions (desktop sidebar only)
   useEffect(() => {
+    if (!allowCollapse) return
     const saved = localStorage.getItem('admin-sidebar-collapsed')
-    if (saved === 'true') setCollapsed(true)
-  }, [])
+    if (saved === 'true') setCollapsedState(true)
+  }, [allowCollapse])
 
   function toggle() {
-    const next = !collapsed
-    setCollapsed(next)
+    const next = !collapsedState
+    setCollapsedState(next)
     localStorage.setItem('admin-sidebar-collapsed', String(next))
   }
 
@@ -165,17 +170,19 @@ export function AdminSidebar({ role, capabilities, onNavigate }: Props) {
             </div>
           )}
         </Link>
-        <button
-          type="button"
-          onClick={toggle}
-          title={collapsed ? 'Pin sidebar open' : 'Collapse sidebar'}
-          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
-        >
-          {collapsed
-            ? <PanelLeftOpen className="h-4 w-4" />
-            : <PanelLeftClose className="h-4 w-4" />
-          }
-        </button>
+        {allowCollapse && (
+          <button
+            type="button"
+            onClick={toggle}
+            title={collapsed ? 'Pin sidebar open' : 'Collapse sidebar'}
+            className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors"
+          >
+            {collapsed
+              ? <PanelLeftOpen className="h-4 w-4" />
+              : <PanelLeftClose className="h-4 w-4" />
+            }
+          </button>
+        )}
       </div>
 
       {/* Navigation */}

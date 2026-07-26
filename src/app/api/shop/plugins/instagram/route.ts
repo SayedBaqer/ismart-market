@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
+import { isPluginEnabledForShop } from '@/lib/services/plugin.service'
 
 export async function GET() {
   const session = await auth()
@@ -23,6 +24,10 @@ export async function POST(req: NextRequest) {
   const shopUser = await prisma.shopUser.findFirst({ where: { userId: session.user.id } })
   if (!shopUser || shopUser.role !== 'MANAGER') {
     return NextResponse.json({ error: 'Only shop owners can manage Instagram posts' }, { status: 403 })
+  }
+
+  if (!(await isPluginEnabledForShop(shopUser.shopId, 'instagram-import'))) {
+    return NextResponse.json({ error: 'Instagram Import plugin is not enabled for your shop' }, { status: 403 })
   }
 
   const body = await req.json() as { posts: { url: string; caption?: string; productSlug?: string }[] }

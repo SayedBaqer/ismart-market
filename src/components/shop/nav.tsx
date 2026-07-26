@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, ShoppingCart, Package, Box, Users,
-  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Instagram, KeyRound, Globe2,
+  FileText, Truck, BarChart3, LogOut, Store, Menu, X, Settings, Newspaper, Puzzle, KeyRound, Globe2,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -35,7 +35,7 @@ function navItems(role: string) {
     { href: `${base}/reports`, label: 'Reports', icon: BarChart3, roles: ['MANAGER'] },
     { href: `${base}/users`, label: 'Staff Users', icon: Users, roles: ['MANAGER'] },
     { href: `${base}/news`, label: 'News & Posts', icon: Newspaper, roles: ['MANAGER', 'STAFF'] },
-    { href: `${base}/plugins/instagram`, label: 'Instagram', icon: Instagram, roles: ['MANAGER'] },
+    { href: `${base}/plugins`, label: 'Plugins', icon: Puzzle, roles: ['MANAGER'] },
     { href: `${base}/profile`, label: 'Shop Profile', icon: Store, roles: ['MANAGER'] },
     { href: `${base}/settings`, label: 'Page Builder', icon: Settings, roles: ['MANAGER'] },
     { href: `${base}/account`, label: 'My Account', icon: KeyRound, roles: ['MANAGER', 'STAFF', 'CASHIER'] },

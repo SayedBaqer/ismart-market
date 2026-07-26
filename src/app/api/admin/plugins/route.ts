@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { prisma } from '@/lib/db'
+import { getAllPlugins } from '@/lib/services/plugin.service'
 
 export async function GET() {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const plugins = await prisma.plugin.findMany({ orderBy: { name: 'asc' } })
+  const plugins = await getAllPlugins()
   return NextResponse.json(plugins)
 }
