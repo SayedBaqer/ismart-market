@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import {
   Package, ShoppingCart, AlertTriangle, Users, TrendingUp,
-  DollarSign, ArrowRight, Activity, BarChart3, Clock,
+  DollarSign, ArrowRight, Activity, BarChart3, Clock, ClipboardCheck,
 } from 'lucide-react'
 
 export default async function AdminDashboard() {
@@ -16,7 +16,8 @@ export default async function AdminDashboard() {
 
   const currency = (await getSetting('currency.base')) ?? 'BHD'
 
-  const [productCount, orderCount, customerCount, recentOrders, orderStats, topProducts, pendingOrders] =
+  const [productCount, orderCount, customerCount, recentOrders, orderStats, topProducts, pendingOrders,
+    pendingShopsCount, pendingNewsCount, activeShopsForDisplay] =
     await Promise.all([
       prisma.product.count({ where: { isActive: true } }),
       prisma.order.count(),
@@ -39,7 +40,18 @@ export default async function AdminDashboard() {
         where: { productId: { not: null } },
       }),
       prisma.order.count({ where: { status: 'PENDING' } }),
+      prisma.shop.count({ where: { status: 'PENDING' } }),
+      prisma.shopNews.count({ where: { status: 'PENDING' } }),
+      prisma.shop.findMany({ where: { status: 'ACTIVE' }, select: { settings: true } }),
     ])
+
+  const pendingDisplaysCount = activeShopsForDisplay.filter((s) => {
+    const settings = (s.settings ?? {}) as Record<string, unknown>
+    const p = settings.displayPending as Record<string, unknown> | undefined
+    return p?.status === 'pending'
+  }).length
+
+  const totalPendingApprovals = pendingShopsCount + pendingNewsCount + pendingDisplaysCount
 
   const allStock = await prisma.stockMeta.findMany({
     where: { threshold: { not: null } },
@@ -128,6 +140,31 @@ export default async function AdminDashboard() {
           </Link>
         )}
       </div>
+
+      {/* Pending approvals banner */}
+      {totalPendingApprovals > 0 && (
+        <Link
+          href={pendingShopsCount > 0 ? '/admin/shops' : '/admin/shops/approvals'}
+          className="flex items-center gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3.5 shadow-sm hover:bg-indigo-100 transition-colors"
+        >
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600">
+            <ClipboardCheck className="h-4 w-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-indigo-900">
+              {totalPendingApprovals} item{totalPendingApprovals > 1 ? 's' : ''} awaiting your approval
+            </p>
+            <p className="text-xs text-indigo-600">
+              {[
+                pendingShopsCount > 0 && `${pendingShopsCount} new shop${pendingShopsCount > 1 ? 's' : ''}`,
+                pendingDisplaysCount > 0 && `${pendingDisplaysCount} page display change${pendingDisplaysCount > 1 ? 's' : ''}`,
+                pendingNewsCount > 0 && `${pendingNewsCount} news post${pendingNewsCount > 1 ? 's' : ''}`,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-indigo-400" />
+        </Link>
+      )}
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
