@@ -125,7 +125,7 @@ export default async function HomePage() {
         where: { isActive: true, parentId: null },
         orderBy: { displayOrder: 'asc' },
         take: 12,
-        select: { id: true, name: true, slug: true, imageUrl: true },
+        select: { id: true, name: true, slug: true, imageUrl: true, meta: true },
       }).catch(() => []),
 
       prisma.product.findMany({
