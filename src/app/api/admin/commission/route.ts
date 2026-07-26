@@ -19,15 +19,23 @@ export async function GET(req: NextRequest) {
   if (period === 'month') dateFilter = { gte: new Date(now.getFullYear(), now.getMonth(), 1) }
   if (period === 'week') { const s = new Date(now); s.setDate(now.getDate() - 7); dateFilter = { gte: s } }
 
-  const commissionSetting = await prisma.setting.findUnique({ where: { key: 'platform.commission' } })
-  let salesType = 'percentage', salesValue = 0, deliveryType = 'percentage', deliveryValue = 0
-  if (commissionSetting?.value) {
+  const [salesSetting, deliverySetting] = await Promise.all([
+    prisma.setting.findUnique({ where: { key: 'platform.commission.sales' } }),
+    prisma.setting.findUnique({ where: { key: 'platform.commission.delivery' } }),
+  ])
+  let salesType = 'percentage', salesValue = 0, deliveryType = 'fixed', deliveryValue = 0
+  if (salesSetting?.value) {
     try {
-      const c = typeof commissionSetting.value === 'string' ? JSON.parse(commissionSetting.value) : commissionSetting.value as Record<string, unknown>
-      salesType = (c.salesType as string) ?? 'percentage'
-      salesValue = Number(c.salesValue ?? 0)
-      deliveryType = (c.deliveryType as string) ?? 'percentage'
-      deliveryValue = Number(c.deliveryValue ?? 0)
+      const c = typeof salesSetting.value === 'string' ? JSON.parse(salesSetting.value) : salesSetting.value as Record<string, unknown>
+      salesType = (c.type as string) ?? 'percentage'
+      salesValue = Number(c.value ?? 0)
+    } catch { /* */ }
+  }
+  if (deliverySetting?.value) {
+    try {
+      const c = typeof deliverySetting.value === 'string' ? JSON.parse(deliverySetting.value) : deliverySetting.value as Record<string, unknown>
+      deliveryType = (c.type as string) ?? 'fixed'
+      deliveryValue = Number(c.value ?? 0)
     } catch { /* */ }
   }
 

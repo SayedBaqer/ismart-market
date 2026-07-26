@@ -55,14 +55,14 @@ export async function GET() {
   ])
 
   // Fetch commission settings
-  const commissionSetting = await prisma.setting.findUnique({ where: { key: 'platform.commission' } })
+  const commissionSetting = await prisma.setting.findUnique({ where: { key: 'platform.commission.sales' } })
   let commissionRate = 0
   let commissionType = 'percentage'
   if (commissionSetting?.value) {
     try {
       const c = JSON.parse(commissionSetting.value as string)
-      commissionType = c.salesType ?? 'percentage'
-      commissionRate = Number(c.salesValue ?? 0)
+      commissionType = c.type ?? 'percentage'
+      commissionRate = Number(c.value ?? 0)
     } catch { /* ignore */ }
   }
 

@@ -13,6 +13,7 @@ export default function CommissionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     fetch('/api/admin/settings').then(r => r.json()).then(d => {
@@ -24,11 +25,20 @@ export default function CommissionPage() {
 
   const save = async () => {
     setSaving(true)
-    await Promise.all([
-      fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'platform.commission.sales', value: JSON.stringify(sales) }) }),
-      fetch('/api/admin/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'platform.commission.delivery', value: JSON.stringify(delivery) }) }),
-    ])
+    setError('')
+    const res = await fetch('/api/admin/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        'platform.commission.sales': JSON.stringify(sales),
+        'platform.commission.delivery': JSON.stringify(delivery),
+      }),
+    })
     setSaving(false)
+    if (!res.ok) {
+      setError('Failed to save — please try again')
+      return
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -120,6 +130,12 @@ export default function CommissionPage() {
           <strong>{delivery.type === 'fixed' ? `${Number(delivery.value).toFixed(3)} BHD` : `${delivery.value}% of order total`}</strong>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       <Button onClick={save} isLoading={saving} className="w-full gap-2">
         <Save className="h-4 w-4" />
