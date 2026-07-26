@@ -8,7 +8,7 @@ import {
   Package, ShoppingCart, Users, TrendingUp, Crown, Zap, Shield,
   Calendar, Phone, Mail, MapPin, Edit3, Save, Globe, AlertTriangle,
   ChevronRight, BarChart2, Activity, BadgeCheck, Sliders,
-  UserCog, KeyRound, Trash2, Ban, Power,
+  UserCog, KeyRound, Trash2, Ban, Power, UserPlus, X,
 } from 'lucide-react'
 
 type ShopPlan = 'FREE' | 'STARTER' | 'BUSINESS' | 'ENTERPRISE'
@@ -104,6 +104,12 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
   const [showHardDelete, setShowHardDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
+
+  // Add team member
+  const [showAddUser, setShowAddUser] = useState(false)
+  const [addUserForm, setAddUserForm] = useState({ name: '', email: '', username: '', password: '', role: 'STAFF' })
+  const [addingUser, setAddingUser] = useState(false)
+  const [addUserError, setAddUserError] = useState('')
 
   // Approval policy state
   const [policy, setPolicy] = useState<{
@@ -248,6 +254,30 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
     if (!res.ok) { const d = await res.json(); setTeamError(d.error ?? 'Failed to remove') }
     await load()
     setTeamBusyId(null)
+  }
+
+  async function addTeamMember() {
+    if (!addUserForm.email || !addUserForm.username || !addUserForm.password) {
+      setAddUserError('Email, username and password are required')
+      return
+    }
+    setAddingUser(true)
+    setAddUserError('')
+    const res = await fetch(`/api/admin/shops/${id}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(addUserForm),
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      setAddUserError(d.error ?? 'Failed to create account')
+      setAddingUser(false)
+      return
+    }
+    setAddUserForm({ name: '', email: '', username: '', password: '', role: 'STAFF' })
+    setShowAddUser(false)
+    await load()
+    setAddingUser(false)
   }
 
   async function hardDeleteShop() {
@@ -617,15 +647,48 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Shop Team */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50">
-              <UserCog className="h-4 w-4 text-blue-600" />
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50">
+                <UserCog className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Shop Team</p>
+                <p className="text-xs text-gray-400">Owner &amp; staff accounts — add, deactivate, reset password, or remove</p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-gray-900">Shop Team</p>
-              <p className="text-xs text-gray-400">Owner &amp; staff accounts — deactivate, reset password, or remove</p>
-            </div>
+            <button type="button" onClick={() => { setShowAddUser(!showAddUser); setAddUserError('') }}
+              className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+              {showAddUser ? <X className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
+              {showAddUser ? 'Cancel' : 'Add Account'}
+            </button>
           </div>
+
+          {showAddUser && (
+            <div className="mb-4 space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+              {addUserError && <p className="text-xs text-red-600">{addUserError}</p>}
+              <div className="grid grid-cols-2 gap-2">
+                <select value={addUserForm.role} onChange={(e) => setAddUserForm((v) => ({ ...v, role: e.target.value }))}
+                  className="col-span-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                  <option value="MANAGER">Owner (Manager)</option>
+                  <option value="STAFF">Sales Staff</option>
+                  <option value="CASHIER">Delivery Staff</option>
+                </select>
+                <input placeholder="Name" value={addUserForm.name} onChange={(e) => setAddUserForm((v) => ({ ...v, name: e.target.value }))}
+                  className="col-span-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input placeholder="Email" value={addUserForm.email} onChange={(e) => setAddUserForm((v) => ({ ...v, email: e.target.value }))}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input placeholder="Username" value={addUserForm.username} onChange={(e) => setAddUserForm((v) => ({ ...v, username: e.target.value }))}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <input type="password" placeholder="Password (min 8 chars)" value={addUserForm.password} onChange={(e) => setAddUserForm((v) => ({ ...v, password: e.target.value }))}
+                  className="col-span-2 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <button type="button" onClick={addTeamMember} disabled={addingUser}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                <UserPlus className="h-3.5 w-3.5" /> {addingUser ? 'Creating…' : 'Create Account'}
+              </button>
+            </div>
+          )}
 
           {teamError && <p className="mb-2 text-xs text-red-600">{teamError}</p>}
 
