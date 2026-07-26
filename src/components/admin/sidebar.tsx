@@ -156,7 +156,7 @@ export function AdminSidebar({ role, capabilities, onNavigate, allowCollapse = t
   const w = collapsed ? 'w-14' : 'w-60'
 
   return (
-    <aside className={cn('flex h-svh flex-col border-r border-gray-100 bg-white shrink-0 shadow-sm transition-all duration-200', w)}>
+    <aside className={cn('flex h-full flex-col border-r border-gray-100 bg-white shrink-0 shadow-sm transition-all duration-200', w)}>
       {/* Logo + collapse toggle */}
       <div className="flex h-14 items-center border-b border-gray-100 px-2 gap-1">
         <Link href="/admin" className={cn('flex items-center gap-2.5 group min-w-0 flex-1', collapsed ? 'justify-center' : 'px-2')}>

@@ -1,4 +1,10 @@
-const CACHE = 'ismart-v2'
+// Bump this version string on every deploy that changes page content (translations,
+// category data, etc). It's the only thing that makes the browser notice this file
+// changed and install a fresh service worker — otherwise installed PWAs (especially
+// iOS, which only checks for SW updates on a full close+reopen) can keep serving
+// stale cached HTML for '/' and '/products' indefinitely, even after the site itself
+// is fixed.
+const CACHE = 'ismart-v3'
 const STATIC = [
   '/',
   '/products',
