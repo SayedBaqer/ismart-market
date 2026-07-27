@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Globe, Save, CheckCircle2, Loader2, ArrowLeft, Sparkles } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface ProductTranslation {
   id: string; name: string; description: string | null
@@ -12,6 +13,7 @@ interface ProductTranslation {
 const LANGS = [{ code: 'ar', label: 'العربية', dir: 'rtl', flag: '🇸🇦' }]
 
 export default function TranslatePage() {
+  const t = useShopT()
   const { id } = useParams() as { id: string }
   const router = useRouter()
   const [product, setProduct] = useState<ProductTranslation | null>(null)
@@ -93,7 +95,7 @@ export default function TranslatePage() {
 
   if (!product) {
     return (
-      <div className="p-6 text-center text-gray-400">Product not found</div>
+      <div className="p-6 text-center text-gray-400">{t.trProductNotFound}</div>
     )
   }
 
@@ -109,7 +111,7 @@ export default function TranslatePage() {
         <div className="flex items-center gap-2">
           <Globe className="h-5 w-5 text-blue-600" />
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Translate Product</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t.trTranslateProduct}</h1>
             <p className="text-xs text-gray-400 truncate max-w-[220px]">{product.name}</p>
           </div>
         </div>
@@ -128,7 +130,7 @@ export default function TranslatePage() {
 
       {/* Source (English) */}
       <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 space-y-2">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">🇬🇧 English (source)</p>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{t.trSourceEnglish}</p>
         <p className="text-sm font-semibold text-gray-900">{product.name}</p>
         {product.description && <p className="text-xs text-gray-500">{product.description}</p>}
       </div>
@@ -136,28 +138,28 @@ export default function TranslatePage() {
       {/* Auto-translate CTA */}
       <button type="button" onClick={autoTranslate} disabled={autoTranslating}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-200 py-3 text-sm font-semibold text-blue-600 hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50 transition-colors">
-        {autoTranslating ? <><Loader2 className="h-4 w-4 animate-spin" /> Translating…</> : <><Sparkles className="h-4 w-4" /> Auto-Translate to {activeLangMeta.label}</>}
+        {autoTranslating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t.trTranslating}</> : <><Sparkles className="h-4 w-4" /> {t.trAutoTranslateTo.replace('{lang}', activeLangMeta.label)}</>}
       </button>
 
       {/* Translation inputs */}
       <div dir={activeLangMeta.dir} className="space-y-3">
         <div>
-          <label className="text-xs font-semibold text-gray-600">Product Name ({activeLangMeta.label})</label>
+          <label className="text-xs font-semibold text-gray-600">{t.trProductName.replace('{lang}', activeLangMeta.label)}</label>
           <input
             value={name}
             onChange={e => { setName(e.target.value); setSaved(false) }}
-            placeholder={`Name in ${activeLangMeta.label}…`}
+            placeholder={t.trNameInLang.replace('{lang}', activeLangMeta.label)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             dir={activeLangMeta.dir}
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600">Description ({activeLangMeta.label})</label>
+          <label className="text-xs font-semibold text-gray-600">{t.trDescription.replace('{lang}', activeLangMeta.label)}</label>
           <textarea
             rows={4}
             value={description}
             onChange={e => { setDescription(e.target.value); setSaved(false) }}
-            placeholder={`Description in ${activeLangMeta.label}…`}
+            placeholder={t.trDescInLang.replace('{lang}', activeLangMeta.label)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"
             dir={activeLangMeta.dir}
           />
@@ -166,13 +168,13 @@ export default function TranslatePage() {
 
       <button type="button" onClick={save} disabled={saving || (!name && !description)}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-md shadow-blue-200">
-        {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> :
-         saved ? <><CheckCircle2 className="h-4 w-4" /> Saved!</> :
-         <><Save className="h-4 w-4" /> Save {activeLangMeta.label} Translation</>}
+        {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> {t.trSaving}</> :
+         saved ? <><CheckCircle2 className="h-4 w-4" /> {t.trSaved}</> :
+         <><Save className="h-4 w-4" /> {t.trSaveTranslation.replace('{lang}', activeLangMeta.label)}</>}
       </button>
 
       <p className="text-center text-xs text-gray-400">
-        Translations appear automatically when customers browse in that language. No approval needed.
+        {t.trFooterNote}
       </p>
     </div>
   )
