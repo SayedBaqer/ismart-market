@@ -7,12 +7,8 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
 import { Plus, Search } from 'lucide-react'
-
-const STATUS_TABS = [
-  { label: 'All', value: '' },
-  { label: 'Active', value: 'true' },
-  { label: 'Inactive', value: 'false' },
-]
+import { getStoreLang } from '@/lib/i18n/get-store-lang'
+import { shopT } from '@/lib/i18n/shop'
 
 export default async function ShopProductsPage({
   searchParams,
@@ -24,6 +20,14 @@ export default async function ShopProductsPage({
 
   const shopUser = await prisma.shopUser.findFirst({ where: { userId: session.user.id } })
   if (!shopUser) redirect('/no-shop')
+
+  const lang = await getStoreLang()
+  const t = shopT[lang]
+  const STATUS_TABS = [
+    { label: t.prodTabAll, value: '' },
+    { label: t.prodTabActive, value: 'true' },
+    { label: t.prodTabInactive, value: 'false' },
+  ]
 
   const sp = await searchParams
   const page = Number(sp.page ?? 1)
@@ -49,8 +53,8 @@ export default async function ShopProductsPage({
   return (
     <div className="p-4 sm:p-6 pb-24 md:pb-6">
       <div className="mb-4">
-        <h1 className="text-lg font-bold text-gray-900">Products</h1>
-        <p className="text-xs text-gray-400">Products you sell in your shop</p>
+        <h1 className="text-lg font-bold text-gray-900">{t.prodTitle}</h1>
+        <p className="text-xs text-gray-400">{t.prodSubtitle}</p>
       </div>
 
       {/* Toolbar */}
@@ -60,7 +64,7 @@ export default async function ShopProductsPage({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search products, SKU…"
+            placeholder={t.prodSearchPlaceholder}
             className="h-9 rounded-md border border-gray-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
           />
           {status && <input type="hidden" name="status" value={status} />}
@@ -68,7 +72,7 @@ export default async function ShopProductsPage({
         {['MANAGER', 'STAFF'].includes(shopUser.role) && (
           <Link href="/shop/products/new">
             <Button>
-              <Plus className="h-4 w-4" /> Add Product
+              <Plus className="h-4 w-4" /> {t.prodAddProduct}
             </Button>
           </Link>
         )}
@@ -98,11 +102,11 @@ export default async function ShopProductsPage({
               <thead>
                 <tr className="border-b border-gray-100 text-left text-xs font-medium text-gray-500">
                   <th className="w-12 px-4 py-3"></th>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">SKU</th>
-                  <th className="px-4 py-3 text-right">Price</th>
-                  <th className="px-4 py-3 text-right hidden sm:table-cell">Stock</th>
-                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">{t.prodColProduct}</th>
+                  <th className="px-4 py-3 hidden sm:table-cell">{t.prodColSku}</th>
+                  <th className="px-4 py-3 text-right">{t.prodColPrice}</th>
+                  <th className="px-4 py-3 text-right hidden sm:table-cell">{t.prodColStock}</th>
+                  <th className="px-4 py-3">{t.prodColStatus}</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -110,9 +114,9 @@ export default async function ShopProductsPage({
                 {items.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-sm text-gray-400">
-                      No products yet.{' '}
+                      {t.prodNoProducts}{' '}
                       <Link href="/shop/products/new" className="text-blue-600 hover:underline">
-                        Add your first product
+                        {t.prodAddFirst}
                       </Link>
                     </td>
                   </tr>
@@ -156,7 +160,7 @@ export default async function ShopProductsPage({
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                           p.isActive ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
                         }`}>
-                          {p.isActive ? 'Active' : 'Inactive'}
+                          {p.isActive ? t.prodActive : t.prodInactive}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -165,7 +169,7 @@ export default async function ShopProductsPage({
                             href={`/shop/products/${p.id}/edit`}
                             className="text-xs text-blue-600 hover:underline"
                           >
-                            Edit
+                            {t.prodEdit}
                           </Link>
                         )}
                       </td>
@@ -179,17 +183,17 @@ export default async function ShopProductsPage({
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
               <p className="text-xs text-gray-500">
-                {total} products · page {page} of {totalPages}
+                {t.prodCountPage.replace('{total}', String(total)).replace('{page}', String(page)).replace('{totalPages}', String(totalPages))}
               </p>
               <div className="flex gap-2">
                 {page > 1 && (
                   <Link href={buildHref({ page: String(page - 1) })}>
-                    <Button variant="outline" size="sm">Previous</Button>
+                    <Button variant="outline" size="sm">{t.prodPrevious}</Button>
                   </Link>
                 )}
                 {page < totalPages && (
                   <Link href={buildHref({ page: String(page + 1) })}>
-                    <Button variant="outline" size="sm">Next</Button>
+                    <Button variant="outline" size="sm">{t.prodNext}</Button>
                   </Link>
                 )}
               </div>

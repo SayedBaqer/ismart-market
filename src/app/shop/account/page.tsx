@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { KeyRound, Save } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
 
 export default function ShopAccountPage() {
+  const t = useShopT()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -14,8 +16,8 @@ export default function ShopAccountPage() {
   async function submit() {
     setError('')
     setSuccess(false)
-    if (newPassword.length < 6) { setError('New password must be at least 6 characters'); return }
-    if (newPassword !== confirmPassword) { setError('New passwords do not match'); return }
+    if (newPassword.length < 6) { setError(t.acctPasswordTooShort); return }
+    if (newPassword !== confirmPassword) { setError(t.acctPasswordsMismatch); return }
 
     setSaving(true)
     const res = await fetch('/api/account/change-password', {
@@ -25,7 +27,7 @@ export default function ShopAccountPage() {
     })
     if (!res.ok) {
       const d = await res.json()
-      setError(d.error ?? 'Failed to change password')
+      setError(d.error ?? t.acctChangeFailed)
     } else {
       setSuccess(true)
       setCurrentPassword('')
@@ -40,8 +42,8 @@ export default function ShopAccountPage() {
       <div className="flex items-center gap-3">
         <KeyRound className="h-5 w-5 text-blue-600" />
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My Account</h1>
-          <p className="text-xs text-gray-500">Change your account password</p>
+          <h1 className="text-xl font-bold text-gray-900">{t.acctTitle}</h1>
+          <p className="text-xs text-gray-500">{t.acctSubtitle}</p>
         </div>
       </div>
 
@@ -51,21 +53,21 @@ export default function ShopAccountPage() {
         )}
         {success && (
           <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-700">
-            Password changed successfully.
+            {t.acctPasswordChanged}
           </div>
         )}
         <div>
-          <label className="text-xs font-semibold text-gray-600">Current Password</label>
+          <label className="text-xs font-semibold text-gray-600">{t.acctCurrentPassword}</label>
           <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600">New Password</label>
+          <label className="text-xs font-semibold text-gray-600">{t.acctNewPassword}</label>
           <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-600">Confirm New Password</label>
+          <label className="text-xs font-semibold text-gray-600">{t.acctConfirmNewPassword}</label>
           <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
@@ -75,7 +77,7 @@ export default function ShopAccountPage() {
           disabled={saving}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Change Password'}
+          <Save className="h-4 w-4" /> {saving ? t.acctSaving : t.acctChangePassword}
         </button>
       </div>
     </div>

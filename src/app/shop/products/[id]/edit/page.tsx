@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 import { ProductForm } from '@/components/admin/product-form'
 import type { Metadata } from 'next'
+import { getStoreLang } from '@/lib/i18n/get-store-lang'
+import { shopT } from '@/lib/i18n/shop'
 
 interface PageProps { params: Promise<{ id: string }> }
 
@@ -31,11 +33,12 @@ export default async function EditShopProductPage({ params }: PageProps) {
   ])
 
   if (!product || product.shopId !== shopUser.shopId) notFound()
+  const t = shopT[await getStoreLang()]
 
   return (
     <div className="p-4 sm:p-6 pb-24 md:pb-6">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Edit Product</h1>
+        <h1 className="text-xl font-semibold text-gray-900">{t.prodEditProductTitle}</h1>
         <p className="text-sm text-gray-500">{product.name}</p>
       </div>
       <ProductForm

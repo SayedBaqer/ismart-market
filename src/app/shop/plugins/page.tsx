@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Puzzle, Lock, ExternalLink } from 'lucide-react'
 import { PLUGIN_ICONS } from '@/components/shop/plugin-icons'
 import { PLUGIN_ROUTES } from '@/lib/plugin-routes'
+import { useShopT } from '@/components/shop/lang-provider'
 
 interface PluginRow {
   slug: string
@@ -18,6 +19,7 @@ interface PluginRow {
 }
 
 export default function ShopPluginsPage() {
+  const t = useShopT()
   const [plugins, setPlugins] = useState<PluginRow[]>([])
   const [plan, setPlan] = useState('FREE')
   const [loading, setLoading] = useState(true)
@@ -47,7 +49,7 @@ export default function ShopPluginsPage() {
     })
     if (!res.ok) {
       const d = await res.json()
-      setError(d.error ?? 'Failed to update plugin')
+      setError(d.error ?? t.plugUpdateFailed)
     }
     await load()
     setBusy(null)
@@ -58,8 +60,8 @@ export default function ShopPluginsPage() {
       <div className="flex items-center gap-3">
         <Puzzle className="h-5 w-5 text-blue-600" />
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Plugins</h1>
-          <p className="text-xs text-gray-500">Extend your shop with optional features · your plan: <span className="font-semibold">{plan}</span></p>
+          <h1 className="text-xl font-bold text-gray-900">{t.plugTitle}</h1>
+          <p className="text-xs text-gray-500">{t.plugSubtitle} <span className="font-semibold">{plan}</span></p>
         </div>
       </div>
 
@@ -68,7 +70,7 @@ export default function ShopPluginsPage() {
       )}
 
       {loading ? (
-        <div className="py-16 text-center text-sm text-gray-400">Loading…</div>
+        <div className="py-16 text-center text-sm text-gray-400">{t.plugLoading}</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {plugins.map((p) => {
@@ -86,7 +88,7 @@ export default function ShopPluginsPage() {
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                         p.minPlan === 'FREE' ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-700'
                       }`}>
-                        {p.minPlan === 'FREE' ? 'Free' : `${p.minPlan}+`}
+                        {p.minPlan === 'FREE' ? t.plugFree : `${p.minPlan}+`}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>
@@ -96,7 +98,7 @@ export default function ShopPluginsPage() {
                 {p.locked ? (
                   <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-700">
                     <Lock className="h-3.5 w-3.5 shrink-0" />
-                    Requires {p.minPlan} plan or higher
+                    {t.plugRequiresPlan.replace('{plan}', p.minPlan)}
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
@@ -110,7 +112,7 @@ export default function ShopPluginsPage() {
                     </button>
                     {p.enabled && href && (
                       <Link href={href} className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline">
-                        Open <ExternalLink className="h-3 w-3" />
+                        {t.plugOpen} <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
                   </div>
