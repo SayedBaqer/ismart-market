@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { TrendingUp, ShoppingCart, Users, DollarSign, Package, BarChart2, Award } from 'lucide-react'
+import { useShopT } from '@/components/shop/lang-provider'
+import type { ShopTranslations } from '@/lib/i18n/shop'
 
 interface AnalyticsData {
   revenue: {
@@ -48,7 +50,8 @@ function KpiCard({ label, value, sub, icon, color = 'blue' }: {
 }
 
 function MiniBar({ data, field }: { data: { day: string; revenue: number; orders: number }[]; field: 'revenue' | 'orders' }) {
-  if (!data.length) return <div className="h-20 flex items-center justify-center text-xs text-gray-400">No data yet</div>
+  const t = useShopT()
+  if (!data.length) return <div className="h-20 flex items-center justify-center text-xs text-gray-400">{t.anaNoDataYet}</div>
   const max = Math.max(...data.map(d => d[field]), 0.001)
   return (
     <div className="flex items-end gap-0.5 h-20 w-full">
@@ -65,16 +68,20 @@ function MiniBar({ data, field }: { data: { day: string; revenue: number; orders
   )
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING:     { label: 'Pending',    color: 'bg-amber-400' },
-  CONFIRMED:   { label: 'Confirmed',  color: 'bg-blue-400' },
-  PREPARED:    { label: 'Ready',      color: 'bg-purple-400' },
-  IN_DELIVERY: { label: 'Delivery',   color: 'bg-orange-400' },
-  COMPLETED:   { label: 'Completed',  color: 'bg-green-500' },
-  CANCELLED:   { label: 'Cancelled',  color: 'bg-red-400' },
+function statusLabels(t: ShopTranslations): Record<string, { label: string; color: string }> {
+  return {
+    PENDING:     { label: t.anaStatusPending,    color: 'bg-amber-400' },
+    CONFIRMED:   { label: t.anaStatusConfirmed,  color: 'bg-blue-400' },
+    PREPARED:    { label: t.anaStatusReady,      color: 'bg-purple-400' },
+    IN_DELIVERY: { label: t.anaStatusDelivery,   color: 'bg-orange-400' },
+    COMPLETED:   { label: t.anaStatusCompleted,  color: 'bg-green-500' },
+    CANCELLED:   { label: t.anaStatusCancelled,  color: 'bg-red-400' },
+  }
 }
 
 export default function ShopAnalyticsPage() {
+  const t = useShopT()
+  const STATUS_LABELS = statusLabels(t)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -96,7 +103,7 @@ export default function ShopAnalyticsPage() {
   if (!data) {
     return (
       <div className="p-4 md:p-6 pb-24 md:pb-6 text-center py-20 text-gray-400">
-        Unable to load analytics
+        {t.anaUnableToLoad}
       </div>
     )
   }
@@ -109,38 +116,38 @@ export default function ShopAnalyticsPage() {
       <div className="flex items-center gap-3">
         <BarChart2 className="h-5 w-5 text-blue-600" />
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-xs text-gray-500">Sales, products, and customer insights</p>
+          <h1 className="text-xl font-bold text-gray-900">{t.anaTitle}</h1>
+          <p className="text-xs text-gray-500">{t.anaSubtitle}</p>
         </div>
       </div>
 
       {/* Revenue KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
-          label="Today"
+          label={t.anaToday}
           value={fmt(data.revenue.today)}
-          sub={`${data.revenue.todayOrders} orders`}
+          sub={`${data.revenue.todayOrders} ${t.anaOrdersSuffix}`}
           icon={<TrendingUp className="h-5 w-5" />}
           color="blue"
         />
         <KpiCard
-          label="This Week"
+          label={t.anaThisWeek}
           value={fmt(data.revenue.week)}
-          sub={`${data.revenue.weekOrders} orders`}
+          sub={`${data.revenue.weekOrders} ${t.anaOrdersSuffix}`}
           icon={<BarChart2 className="h-5 w-5" />}
           color="purple"
         />
         <KpiCard
-          label="This Month"
+          label={t.anaThisMonth}
           value={fmt(data.revenue.month)}
-          sub={`${data.revenue.monthOrders} orders`}
+          sub={`${data.revenue.monthOrders} ${t.anaOrdersSuffix}`}
           icon={<DollarSign className="h-5 w-5" />}
           color="green"
         />
         <KpiCard
-          label="All Time"
+          label={t.anaAllTime}
           value={fmt(data.revenue.allTime)}
-          sub={`${data.revenue.allTimeOrders} orders`}
+          sub={`${data.revenue.allTimeOrders} ${t.anaOrdersSuffix}`}
           icon={<Award className="h-5 w-5" />}
           color="orange"
         />
@@ -150,11 +157,11 @@ export default function ShopAnalyticsPage() {
       <div className="rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <p className="text-xs font-semibold text-green-700">Net Earnings (after platform fee)</p>
+            <p className="text-xs font-semibold text-green-700">{t.anaNetEarnings}</p>
             <p className="text-2xl font-black text-green-800 mt-0.5">{fmt(data.revenue.net)} BHD</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-green-600">Platform commission</p>
+            <p className="text-xs text-green-600">{t.anaPlatformCommission}</p>
             <p className="text-sm font-bold text-green-700">{fmt(data.revenue.commission)} BHD</p>
           </div>
         </div>
@@ -162,7 +169,7 @@ export default function ShopAnalyticsPage() {
 
       {/* Revenue trend chart */}
       <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-        <p className="text-sm font-semibold text-gray-700 mb-3">Revenue — last 30 days</p>
+        <p className="text-sm font-semibold text-gray-700 mb-3">{t.anaRevenue30}</p>
         <MiniBar data={data.daily} field="revenue" />
         {data.daily.length > 0 && (
           <div className="flex justify-between mt-1">
@@ -175,12 +182,12 @@ export default function ShopAnalyticsPage() {
       {/* Orders chart + status breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Orders — last 30 days</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">{t.anaOrders30}</p>
           <MiniBar data={data.daily} field="orders" />
         </div>
 
         <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-          <p className="text-sm font-semibold text-gray-700 mb-3">Order Status ({totalOrderCount} total)</p>
+          <p className="text-sm font-semibold text-gray-700 mb-3">{t.anaOrderStatus.replace('{count}', String(totalOrderCount))}</p>
           <div className="space-y-2">
             {Object.entries(data.orders.byStatus)
               .filter(([, count]) => count > 0)
@@ -208,7 +215,7 @@ export default function ShopAnalyticsPage() {
         <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
             <DollarSign className="h-4 w-4 text-green-600" />
-            <p className="text-sm font-semibold text-gray-700">Top Products by Revenue</p>
+            <p className="text-sm font-semibold text-gray-700">{t.anaTopProductsRevenue}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {data.topProducts.map((p, i) => (
@@ -217,7 +224,7 @@ export default function ShopAnalyticsPage() {
                 <p className="flex-1 text-sm text-gray-700 truncate min-w-0">{p.name}</p>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold text-gray-900">{fmt(p.revenue)}</p>
-                  <p className="text-xs text-gray-400">{p.qty} sold</p>
+                  <p className="text-xs text-gray-400">{p.qty} {t.anaSold}</p>
                 </div>
               </div>
             ))}
@@ -230,7 +237,7 @@ export default function ShopAnalyticsPage() {
         <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
             <Package className="h-4 w-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-700">Top Products by Views</p>
+            <p className="text-sm font-semibold text-gray-700">{t.anaTopProductsViews}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {data.topByViews.map((p, i) => (
@@ -238,8 +245,8 @@ export default function ShopAnalyticsPage() {
                 <span className="text-xs font-black text-gray-300 w-4">#{i + 1}</span>
                 <p className="flex-1 text-sm text-gray-700 truncate min-w-0">{p.name}</p>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-gray-900">{p.views} views</p>
-                  <p className="text-xs text-gray-400">{p.salesCount} sales</p>
+                  <p className="text-sm font-semibold text-gray-900">{p.views} {t.anaViews}</p>
+                  <p className="text-xs text-gray-400">{p.salesCount} {t.anaSales}</p>
                 </div>
               </div>
             ))}
@@ -250,13 +257,13 @@ export default function ShopAnalyticsPage() {
       {/* Customers */}
       <div className="grid grid-cols-2 gap-3">
         <KpiCard
-          label="Total Customers"
+          label={t.anaTotalCustomers}
           value={String(data.customers.total)}
           icon={<Users className="h-5 w-5" />}
           color="blue"
         />
         <KpiCard
-          label="New (30 days)"
+          label={t.anaNew30}
           value={String(data.customers.newThisMonth)}
           icon={<Users className="h-5 w-5" />}
           color="green"
@@ -268,14 +275,14 @@ export default function ShopAnalyticsPage() {
         <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
             <ShoppingCart className="h-4 w-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-700">Recent Sales (7 days)</p>
+            <p className="text-sm font-semibold text-gray-700">{t.anaRecentSales}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {data.recentSales.map((o) => (
               <div key={o.orderNumber} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-mono text-xs font-bold text-gray-900">#{o.orderNumber}</p>
-                  <p className="text-xs text-gray-400 truncate">{o.customerName ?? 'Guest'}</p>
+                  <p className="text-xs text-gray-400 truncate">{o.customerName ?? t.anaGuest}</p>
                 </div>
                 <p className="text-sm font-bold text-gray-900 shrink-0">{fmt(Number(o.grandTotal))} {o.currency}</p>
               </div>
@@ -286,8 +293,8 @@ export default function ShopAnalyticsPage() {
 
       {/* Free plan badge */}
       <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-4 text-center">
-        <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">Advanced Analytics</p>
-        <p className="text-xs text-blue-500 mt-1">Currently on Free Plan · Premium analytics coming soon</p>
+        <p className="text-xs font-bold text-blue-600 uppercase tracking-wide">{t.anaAdvancedAnalytics}</p>
+        <p className="text-xs text-blue-500 mt-1">{t.anaFreePlanBadge}</p>
       </div>
     </div>
   )
