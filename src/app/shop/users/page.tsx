@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Users, Plus, X, Check, Truck, ShoppingCart, Crown, RefreshCw, Smartphone, Zap, Trash2, Pencil, KeyRound } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useShopT } from '@/components/shop/lang-provider'
+import type { ShopTranslations } from '@/lib/i18n/shop'
 
 interface StaffMember {
   id: string
@@ -21,33 +23,40 @@ interface Quota {
   CASHIER: number
 }
 
-const ROLE_INFO = {
-  MANAGER: {
-    label: 'Owner',
-    icon: Crown,
-    color: 'bg-amber-100 text-amber-700',
-    mobile: null,
-  },
-  STAFF: {
-    label: 'Sales',
-    icon: ShoppingCart,
-    color: 'bg-blue-100 text-blue-700',
-    mobile: 'Create orders, manage customers, view stock',
-  },
-  CASHIER: {
-    label: 'Delivery',
-    icon: Truck,
-    color: 'bg-purple-100 text-purple-700',
-    mobile: 'View assigned deliveries, update status, confirm delivery',
-  },
+function roleInfo(t: ShopTranslations) {
+  return {
+    MANAGER: {
+      label: t.roleOwner,
+      icon: Crown,
+      color: 'bg-amber-100 text-amber-700',
+      mobile: null as string | null,
+    },
+    STAFF: {
+      label: t.roleSales,
+      icon: ShoppingCart,
+      color: 'bg-blue-100 text-blue-700',
+      mobile: t.usrSalesMobileDesc,
+    },
+    CASHIER: {
+      label: t.roleDelivery,
+      icon: Truck,
+      color: 'bg-purple-100 text-purple-700',
+      mobile: t.usrDeliveryMobileDesc,
+    },
+  }
 }
 
-const ADD_ROLES = [
-  { id: 'STAFF', label: 'Sales Staff', desc: 'Create orders, manage customers, assign delivery', quotaKey: 'STAFF' as const },
-  { id: 'CASHIER', label: 'Delivery Staff', desc: 'View assigned orders, update delivery status', quotaKey: 'CASHIER' as const },
-]
+function addRoles(t: ShopTranslations) {
+  return [
+    { id: 'STAFF', label: t.usrSalesStaff, desc: t.usrSalesStaffDesc, quotaKey: 'STAFF' as const },
+    { id: 'CASHIER', label: t.usrDeliveryStaff, desc: t.usrDeliveryStaffDesc, quotaKey: 'CASHIER' as const },
+  ]
+}
 
 export default function ShopUsersPage() {
+  const t = useShopT()
+  const ROLE_INFO = roleInfo(t)
+  const ADD_ROLES = addRoles(t)
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [quota, setQuota] = useState<Quota>({ STAFF: 1, CASHIER: 1 })
   const [used, setUsed] = useState<Quota>({ STAFF: 0, CASHIER: 0 })
@@ -77,7 +86,7 @@ export default function ShopUsersPage() {
   useEffect(() => { load() }, [load])
 
   async function addUser() {
-    if (!form.email || !form.password) { setError('Email and password required'); return }
+    if (!form.email || !form.password) { setError(t.usrEmailPasswordRequired); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/shop/staff', {
@@ -87,7 +96,7 @@ export default function ShopUsersPage() {
     })
     const d = await res.json()
     if (!res.ok) {
-      setError(d.error ?? 'Failed to create account')
+      setError(d.error ?? t.usrCreateFailed)
       setSaving(false)
       return
     }
@@ -98,7 +107,7 @@ export default function ShopUsersPage() {
   }
 
   async function removeUser(shopUserId: string) {
-    if (!confirm('Remove this staff member?')) return
+    if (!confirm(t.usrRemoveConfirm)) return
     setDeletingId(shopUserId)
     await fetch('/api/shop/staff', {
       method: 'DELETE',
@@ -125,14 +134,14 @@ export default function ShopUsersPage() {
       body: JSON.stringify({ shopUserId, ...editForm }),
     })
     const d = await res.json()
-    if (!res.ok) { setError(d.error ?? 'Failed to update'); setBusyId(null); return }
+    if (!res.ok) { setError(d.error ?? t.usrUpdateFailed); setBusyId(null); return }
     setEditingId(null)
     load()
     setBusyId(null)
   }
 
   async function resetPassword(shopUserId: string) {
-    if (newPassword.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (newPassword.length < 8) { setError(t.usrPasswordTooShort); return }
     setBusyId(shopUserId)
     setError('')
     const res = await fetch('/api/shop/staff', {
@@ -141,7 +150,7 @@ export default function ShopUsersPage() {
       body: JSON.stringify({ shopUserId, newPassword }),
     })
     const d = await res.json()
-    if (!res.ok) { setError(d.error ?? 'Failed to reset password'); setBusyId(null); return }
+    if (!res.ok) { setError(d.error ?? t.usrResetFailed); setBusyId(null); return }
     setResettingId(null)
     setNewPassword('')
     setBusyId(null)
@@ -158,21 +167,21 @@ export default function ShopUsersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Users className="h-5 w-5 text-blue-600" />
-            Staff Users
+            {t.usrTitle}
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">{staff.length} members in your shop</p>
+          <p className="text-xs text-gray-500 mt-0.5">{t.usrMembersInShop.replace('{count}', String(staff.length))}</p>
         </div>
         <Button size="sm" onClick={() => { setShowForm(true); setError('') }} className="gap-2">
           <Plus className="h-4 w-4" />
-          Add Staff
+          {t.usrAddStaff}
         </Button>
       </div>
 
       {/* Plan quota summary */}
       <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">Free Plan Quota</p>
-          <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">Free</span>
+          <p className="text-xs font-bold text-blue-800 uppercase tracking-wide">{t.usrFreePlanQuota}</p>
+          <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">{t.usrFree}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {ADD_ROLES.map((r) => {
@@ -185,7 +194,7 @@ export default function ShopUsersPage() {
                 <p className={`text-lg font-bold mt-0.5 ${full ? 'text-orange-600' : 'text-blue-600'}`}>
                   {u} / {q}
                 </p>
-                <p className="text-xs text-gray-400">{full ? 'Slot full' : `${q - u} available`}</p>
+                <p className="text-xs text-gray-400">{full ? t.usrSlotFull : t.usrAvailable.replace('{count}', String(q - u))}</p>
               </div>
             )
           })}
@@ -196,7 +205,7 @@ export default function ShopUsersPage() {
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Smartphone className="h-4 w-4 text-blue-600" />
-          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Mobile App Access</p>
+          <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">{t.usrMobileAppAccess}</p>
         </div>
         {ADD_ROLES.map((r) => {
           const info = ROLE_INFO[r.id as keyof typeof ROLE_INFO]
@@ -219,7 +228,7 @@ export default function ShopUsersPage() {
       {showForm && (
         <div className="rounded-2xl bg-white border border-gray-200 shadow-md p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-gray-900">Add Staff Member</h2>
+            <h2 className="text-sm font-bold text-gray-900">{t.usrAddStaffMember}</h2>
             <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
               <X className="h-4 w-4" />
             </button>
@@ -233,7 +242,7 @@ export default function ShopUsersPage() {
 
           {/* Role selector first so user sees quota before filling form */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-700">Role *</label>
+            <label className="mb-1.5 block text-xs font-medium text-gray-700">{t.usrRole}</label>
             <div className="grid grid-cols-2 gap-2">
               {ADD_ROLES.map((r) => {
                 const u = used[r.quotaKey]
@@ -256,7 +265,7 @@ export default function ShopUsersPage() {
                   >
                     <p className="text-xs font-bold text-gray-900">{r.label}</p>
                     <p className={`text-xs mt-0.5 ${full ? 'text-orange-500 font-semibold' : 'text-gray-400'}`}>
-                      {full ? `Quota full (${u}/${q})` : `${u}/${q} used`}
+                      {full ? t.usrQuotaFull.replace('{used}', String(u)).replace('{quota}', String(q)) : t.usrUsed.replace('{used}', String(u)).replace('{quota}', String(q))}
                     </p>
                   </button>
                 )
@@ -266,38 +275,38 @@ export default function ShopUsersPage() {
 
           {selectedAtQuota ? (
             <div className="rounded-xl bg-orange-50 border border-orange-200 px-3 py-3 text-xs text-orange-700 text-center">
-              <p className="font-semibold">Quota reached for this role</p>
-              <p className="mt-0.5">Remove an existing member or upgrade your plan to add more.</p>
+              <p className="font-semibold">{t.usrQuotaReached}</p>
+              <p className="mt-0.5">{t.usrQuotaReachedHint}</p>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               <Input
-                label="Full Name"
+                label={t.usrFullName}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Ahmed Ali"
+                placeholder={t.usrFullNamePlaceholder}
               />
               <Input
-                label="Email *"
+                label={t.usrEmailRequired}
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="user@email.com"
-                hint="Can be the same email as another account in your shop"
+                hint={t.usrEmailHint}
               />
               <Input
-                label="Username (optional)"
+                label={t.usrUsernameOptional}
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value })}
-                placeholder="Auto-generated if left blank"
-                hint="Only needed to tell apart accounts sharing an email"
+                placeholder={t.usrUsernamePlaceholder}
+                hint={t.usrUsernameHint}
               />
               <Input
-                label="Password *"
+                label={t.usrPasswordRequired}
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Min 8 characters"
+                placeholder={t.usrPasswordPlaceholder}
               />
             </div>
           )}
@@ -305,11 +314,11 @@ export default function ShopUsersPage() {
           {!selectedAtQuota && (
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>
-                Cancel
+                {t.usrCancel}
               </Button>
               <Button className="flex-1" isLoading={saving} onClick={addUser}>
                 <Check className="mr-2 h-4 w-4" />
-                Create Account
+                {t.usrCreateAccount}
               </Button>
             </div>
           )}
@@ -337,7 +346,7 @@ export default function ShopUsersPage() {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{member.name ?? 'Unnamed'}</p>
+                    <p className="text-sm font-semibold text-gray-900">{member.name ?? t.usrUnnamed}</p>
                     <p className="text-xs text-gray-400 truncate">{member.email}{member.username ? ` · @${member.username}` : ''}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -349,14 +358,14 @@ export default function ShopUsersPage() {
                         <button
                           onClick={() => (isEditing ? setEditingId(null) : startEdit(member))}
                           className="p-1.5 rounded-lg text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors"
-                          title="Edit"
+                          title={t.usrEdit}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => { setResettingId(isResetting ? null : member.shopUserId); setEditingId(null); setNewPassword(''); setError('') }}
                           className="p-1.5 rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
-                          title="Reset password"
+                          title={t.usrResetPassword}
                         >
                           <KeyRound className="h-3.5 w-3.5" />
                         </button>
@@ -364,7 +373,7 @@ export default function ShopUsersPage() {
                           onClick={() => removeUser(member.shopUserId)}
                           disabled={deletingId === member.shopUserId}
                           className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
-                          title="Remove"
+                          title={t.usrRemove}
                         >
                           {deletingId === member.shopUserId
                             ? <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -377,12 +386,12 @@ export default function ShopUsersPage() {
 
                 {isEditing && (
                   <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-                    <Input label="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-                    <Input label="Email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
-                    <Input label="Username" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} />
+                    <Input label={t.usrName} value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                    <Input label={t.usrEmail} type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                    <Input label={t.usrUsername} value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value })} />
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingId(null)}>Cancel</Button>
-                      <Button size="sm" className="flex-1" isLoading={isBusy} onClick={() => saveEdit(member.shopUserId)}>Save</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditingId(null)}>{t.usrCancel}</Button>
+                      <Button size="sm" className="flex-1" isLoading={isBusy} onClick={() => saveEdit(member.shopUserId)}>{t.usrSave}</Button>
                     </div>
                   </div>
                 )}
@@ -393,10 +402,10 @@ export default function ShopUsersPage() {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="New password (min 8 chars)"
+                      placeholder={t.usrNewPasswordPlaceholder}
                       className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                     />
-                    <Button size="sm" isLoading={isBusy} onClick={() => resetPassword(member.shopUserId)}>Set</Button>
+                    <Button size="sm" isLoading={isBusy} onClick={() => resetPassword(member.shopUserId)}>{t.usrSet}</Button>
                   </div>
                 )}
               </div>
@@ -405,7 +414,7 @@ export default function ShopUsersPage() {
           {staff.length === 0 && (
             <div className="text-center py-10 rounded-2xl bg-white border border-gray-100 text-gray-400">
               <Users className="h-10 w-10 mx-auto mb-2 text-gray-200" />
-              <p className="text-sm">No staff yet — add your first team member</p>
+              <p className="text-sm">{t.usrNoStaffYet}</p>
             </div>
           )}
         </div>
@@ -417,11 +426,11 @@ export default function ShopUsersPage() {
           <Zap className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900">Need more staff slots?</p>
-          <p className="text-xs text-gray-500 mt-0.5">Upgrade to unlock more Sales, Delivery &amp; Manager accounts</p>
+          <p className="text-sm font-bold text-gray-900">{t.usrNeedMoreSlots}</p>
+          <p className="text-xs text-gray-500 mt-0.5">{t.usrUpgradeHint}</p>
         </div>
         <span className="shrink-0 rounded-xl bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500">
-          Coming Soon
+          {t.usrComingSoon}
         </span>
       </div>
     </div>

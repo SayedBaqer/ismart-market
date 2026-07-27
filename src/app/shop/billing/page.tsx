@@ -6,6 +6,8 @@ import {
   Search, RefreshCw, ChevronDown,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useShopT } from '@/components/shop/lang-provider'
+import type { ShopTranslations } from '@/lib/i18n/shop'
 
 type Tab = 'overview' | 'documents'
 
@@ -53,8 +55,11 @@ const ORDER_STATUS_BADGE: Record<string, string> = {
 }
 
 const DOC_TYPES = ['ALL', 'INVOICE', 'ESTIMATE', 'SALES_ORDER', 'CREDIT_NOTE']
-const DOC_LABELS: Record<string, string> = {
-  ALL: 'All', INVOICE: 'Invoice', ESTIMATE: 'Quote', SALES_ORDER: 'Sales Order', CREDIT_NOTE: 'Credit Note',
+function docLabels(t: ShopTranslations): Record<string, string> {
+  return {
+    ALL: t.billDocAll, INVOICE: t.billDocInvoice, ESTIMATE: t.billDocEstimate,
+    SALES_ORDER: t.billDocSalesOrder, CREDIT_NOTE: t.billDocCreditNote,
+  }
 }
 
 function fmt(n: number, currency = 'BHD') {
@@ -62,7 +67,8 @@ function fmt(n: number, currency = 'BHD') {
 }
 
 function MiniChart({ data }: { data: { day: string; total: number }[] }) {
-  if (!data.length) return <div className="h-16 flex items-center justify-center text-xs text-gray-400">No data</div>
+  const t = useShopT()
+  if (!data.length) return <div className="h-16 flex items-center justify-center text-xs text-gray-400">{t.billNoData}</div>
   const max = Math.max(...data.map((d) => d.total), 0.001)
   return (
     <div className="flex items-end gap-1 h-16">
@@ -80,6 +86,8 @@ function MiniChart({ data }: { data: { day: string; total: number }[] }) {
 }
 
 export default function ShopBillingPage() {
+  const t = useShopT()
+  const DOC_LABELS = docLabels(t)
   const [tab, setTab] = useState<Tab>('overview')
   const [flow, setFlow] = useState<MoneyFlow | null>(null)
   const [flowLoading, setFlowLoading] = useState(true)
@@ -130,18 +138,18 @@ export default function ShopBillingPage() {
         <div className="flex items-center gap-3">
           <DollarSign className="h-5 w-5 text-blue-600" />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Billing & Finance</h1>
-            <p className="text-xs text-gray-500">Revenue, documents and payments</p>
+            <h1 className="text-xl font-bold text-gray-900">{t.billTitle}</h1>
+            <p className="text-xs text-gray-500">{t.billSubtitle}</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 rounded-xl bg-gray-100 p-1 w-fit">
-        {(['overview', 'documents'] as Tab[]).map((t) => (
-          <button key={t} type="button" onClick={() => setTab(t)}
-            className={`rounded-lg px-4 py-1.5 text-xs font-semibold capitalize transition-all ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-            {t === 'overview' ? 'Money Flow' : 'Documents'}
+        {(['overview', 'documents'] as Tab[]).map((tabKey) => (
+          <button key={tabKey} type="button" onClick={() => setTab(tabKey)}
+            className={`rounded-lg px-4 py-1.5 text-xs font-semibold capitalize transition-all ${tab === tabKey ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+            {tabKey === 'overview' ? t.billTabMoneyFlow : t.billTabDocuments}
           </button>
         ))}
       </div>
@@ -158,26 +166,26 @@ export default function ShopBillingPage() {
               {/* KPI cards */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-                  <p className="text-xs text-gray-500 font-medium">Total Revenue</p>
+                  <p className="text-xs text-gray-500 font-medium">{t.billTotalRevenue}</p>
                   <p className="mt-1 text-xl font-black text-gray-900">{fmt(flow.totalRevenue)}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{flow.completedCount} orders</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{flow.completedCount} {t.billOrdersSuffix}</p>
                 </div>
                 <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-                  <p className="text-xs text-gray-500 font-medium">In Pipeline</p>
+                  <p className="text-xs text-gray-500 font-medium">{t.billInPipeline}</p>
                   <p className="mt-1 text-xl font-black text-blue-600">{fmt(flow.pendingRevenue)}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{flow.pendingCount} active</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{flow.pendingCount} {t.billActiveSuffix}</p>
                 </div>
                 <div className="rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
-                  <p className="text-xs text-gray-500 font-medium">Platform Fee</p>
+                  <p className="text-xs text-gray-500 font-medium">{t.billPlatformFee}</p>
                   <p className="mt-1 text-xl font-black text-orange-500">{fmt(flow.commissionOwed)}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {flow.commissionType === 'percentage' ? `${flow.commissionRate}%` : `${fmt(flow.commissionRate)} / order`}
+                    {flow.commissionType === 'percentage' ? `${flow.commissionRate}%` : `${fmt(flow.commissionRate)} ${t.billPerOrder}`}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-green-50 border border-green-200 p-4 shadow-sm">
-                  <p className="text-xs text-green-700 font-medium">Net Earnings</p>
+                  <p className="text-xs text-green-700 font-medium">{t.billNetEarnings}</p>
                   <p className="mt-1 text-xl font-black text-green-700">{fmt(flow.netEarnings)}</p>
-                  <p className="text-xs text-green-500 mt-0.5">After platform fee</p>
+                  <p className="text-xs text-green-500 mt-0.5">{t.billAfterPlatformFee}</p>
                 </div>
               </div>
 
@@ -186,7 +194,7 @@ export default function ShopBillingPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <BarChart2 className="h-4 w-4 text-blue-600" />
-                    <p className="text-sm font-semibold text-gray-700">Revenue (last 14 days)</p>
+                    <p className="text-sm font-semibold text-gray-700">{t.billRevenueLast14}</p>
                   </div>
                 </div>
                 <MiniChart data={flow.dailyRevenue} />
@@ -204,10 +212,10 @@ export default function ShopBillingPage() {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-blue-600" />
-                      <p className="text-sm font-semibold text-gray-700">Recent Orders</p>
+                      <p className="text-sm font-semibold text-gray-700">{t.billRecentOrders}</p>
                     </div>
                     <Link href="/shop/orders" className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5">
-                      View all <ChevronRight className="h-3.5 w-3.5" />
+                      {t.billViewAll} <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
                   <div className="divide-y divide-gray-50">
@@ -221,7 +229,7 @@ export default function ShopBillingPage() {
                             </span>
                           </div>
                           <p className="text-xs text-gray-400 mt-0.5 truncate">
-                            {order.customer?.displayName ?? order.customerName ?? 'Guest'}
+                            {order.customer?.displayName ?? order.customerName ?? t.billGuest}
                             {' · '}
                             {new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                           </p>
@@ -235,7 +243,7 @@ export default function ShopBillingPage() {
             </>
           ) : (
             <div className="rounded-2xl border-2 border-dashed border-gray-200 py-12 text-center">
-              <p className="text-sm text-gray-400">Unable to load financial data</p>
+              <p className="text-sm text-gray-400">{t.billUnableToLoad}</p>
             </div>
           )}
         </div>
@@ -251,7 +259,7 @@ export default function ShopBillingPage() {
               <input
                 value={docSearch}
                 onChange={(e) => setDocSearch(e.target.value)}
-                placeholder="Search by doc # or customer…"
+                placeholder={t.billSearchPlaceholder}
                 className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
@@ -261,7 +269,7 @@ export default function ShopBillingPage() {
                 onChange={(e) => setDocType(e.target.value)}
                 className="h-10 rounded-xl border border-gray-200 bg-white pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none"
               >
-                {DOC_TYPES.map((t) => <option key={t} value={t}>{DOC_LABELS[t]}</option>)}
+                {DOC_TYPES.map((dt) => <option key={dt} value={dt}>{DOC_LABELS[dt]}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
             </div>
@@ -271,7 +279,7 @@ export default function ShopBillingPage() {
             </button>
           </div>
 
-          <p className="text-xs text-gray-400">{docsTotal} document{docsTotal !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-gray-400">{(docsTotal !== 1 ? t.billDocCountPlural : t.billDocCount).replace('{count}', String(docsTotal))}</p>
 
           {docsLoading ? (
             <div className="flex h-40 items-center justify-center">
@@ -280,8 +288,8 @@ export default function ShopBillingPage() {
           ) : docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 py-16">
               <FileText className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-sm font-semibold text-gray-500">No documents found</p>
-              <p className="text-xs text-gray-400 mt-1">Create documents from the admin billing section</p>
+              <p className="text-sm font-semibold text-gray-500">{t.billNoDocuments}</p>
+              <p className="text-xs text-gray-400 mt-1">{t.billCreateFromAdmin}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -305,7 +313,7 @@ export default function ShopBillingPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-gray-900">{fmt(Number(doc.grandTotal), doc.currency)}</p>
-                    <p className="text-xs text-gray-400">{doc._count.items} lines · {doc._count.payments} pymt</p>
+                    <p className="text-xs text-gray-400">{doc._count.items} {t.billLines} · {doc._count.payments} {t.billPymt}</p>
                   </div>
                   <Clock className="h-4 w-4 text-gray-300 shrink-0" />
                 </Link>
@@ -320,7 +328,7 @@ export default function ShopBillingPage() {
                 className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
                 ‹
               </button>
-              <span className="text-sm text-gray-600">Page {docsPage} of {docsTotalPages}</span>
+              <span className="text-sm text-gray-600">{t.billPageOf.replace('{page}', String(docsPage)).replace('{total}', String(docsTotalPages))}</span>
               <button type="button" onClick={() => setDocsPage((p) => Math.min(docsTotalPages, p + 1))} disabled={docsPage === docsTotalPages}
                 className="h-9 w-9 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40">
                 ›
